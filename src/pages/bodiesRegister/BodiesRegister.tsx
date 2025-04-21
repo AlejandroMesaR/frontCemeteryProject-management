@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaFileExport, FaSearch, FaFilter } from "react-icons/fa";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"; 
 import Button  from "../../components/utilsComponents/Button"; 
 import { Input } from "../../components/utilsComponents/Input"; 
+import { getAllBodies } from "../../services/managementService"; 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
 
 const data = [
@@ -26,6 +27,19 @@ const BodiesRegister = () => {
       item.id.toLowerCase().includes(search.toLowerCase())
     );
   });
+
+  const cuerpos = async () => {
+    const data = await getAllBodies();
+    console.log(data);
+  }
+
+  useEffect( () => {
+    cuerpos();
+  }, );
+
+
+
+
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
