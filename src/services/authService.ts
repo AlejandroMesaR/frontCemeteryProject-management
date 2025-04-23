@@ -1,4 +1,4 @@
-import api from '../api/axios';
+import { api }from '../api/axios';
 import { RegisterUserDTO} from '../models/User';
 
 export const registerUser = async (data: RegisterUserDTO) => {
