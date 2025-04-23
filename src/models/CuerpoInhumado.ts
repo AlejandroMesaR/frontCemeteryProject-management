@@ -19,3 +19,12 @@ export interface CuerpoInhumado {
   estado: string;
   observaciones: string;
   }
+
+  export interface MappedBody {
+    id: string;
+    name: string;
+    date: string;
+    state: string;
+    document: string;
+    description: string;
+  }
