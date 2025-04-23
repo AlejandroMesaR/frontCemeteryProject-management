@@ -11,3 +11,14 @@ export const getAllBodies = async () => {
     }
   
   };
+
+  export const deleteBodyById = async (idCadaver: string) => {
+    try {
+      const response = await apiManagement.delete(`/cuerposinhumados/${idCadaver}`);
+      return response.status === 204;
+    } catch (error) {
+      console.error(`Error al eliminar el cuerpo con id ${idCadaver}:`, error);
+      throw error;
+    }
+  };
+  

@@ -3,9 +3,10 @@ import { FaFileExport, FaSearch, FaFilter } from "react-icons/fa";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"; 
 import Button  from "../../components/utilsComponents/Button"; 
 import { Input } from "../../components/utilsComponents/Input"; 
-import { getAllBodies } from "../../services/managementService"; 
+import { getAllBodies, deleteBodyById } from "../../services/managementService"; 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
 import { CuerpoInhumado, MappedBody } from "../../models/CuerpoInhumado"; 
+import Swal from 'sweetalert2';
 
 
 const BodiesRegister = () => {
@@ -22,7 +23,7 @@ const BodiesRegister = () => {
         name: `${item.nombre} ${item.apellido}`,
         date: item.fechaIngreso,
         state: item.estado,
-        document: `${item.documentoIdentidad || "N/A"}`,
+        document: item.documentoIdentidad,
         description: item.observaciones || "Sin observaciones",
        
       }));
@@ -60,6 +61,34 @@ const BodiesRegister = () => {
   //Fin logica Pginacion
 
 
+  //Alerta de eliminar
+
+const handleDelete = async (id: string) => {
+  const result = await Swal.fire({
+    title: '¿Estás seguro?',
+    text: 'Esta acción eliminará el cuerpo de manera permanente.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#e14a4a',
+    cancelButtonColor: '#e14a4a',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await deleteBodyById(id);
+      Swal.fire('Eliminado', 'El cuerpo ha sido eliminado exitosamente.', 'success');
+      setBodiesData((prev) => prev.filter((item) => item.id !== id));
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      Swal.fire('Error', 'Ocurrió un error al eliminar.', 'error');
+    }
+  }
+};
+
+//Fin alerta de eliminar
+
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-2xl font-semibold">Body Admissions</h2>
@@ -92,11 +121,11 @@ const BodiesRegister = () => {
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex items-center space-x-2">
-          <Button className="flex items-center bg-blue-700 text-white px-4 py-2">
+          <Button className="flex items-center bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500">
             <span>Registrar Cuerpo</span>
           </Button>
 
-          <Button className="flex items-center space-x-2 bg-blue-900 text-white px-4 py-2">
+          <Button className="flex items-center space-x-2 bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500">
             <FaFileExport />
             <span>Export</span>
           </Button>
@@ -133,9 +162,12 @@ const BodiesRegister = () => {
                 <TableCell>{item.document}</TableCell>
                 <TableCell>{item.description}</TableCell> 
                 <TableCell>
-                  <Button className="bg-blue-600 text-blue-500 hover:underline mr-1">Ver</Button>
-                  <Button className="bg-yellow-400 hover:underline mr-1 ">Editar</Button>
-                  <Button className="bg-red-500  hover:underline">Eliminar</Button>
+                  <Button className="bg-blue-600 ho  hover:underline hover:bg-blue-400 transition mr-1">Ver</Button>
+                  <Button className="bg-yellow-600 hover:underline mr-1 hover:bg-yellow-400 transition ">Editar</Button>
+                  <Button
+                    className="bg-red-600 text-white hover:underline hover:bg-red-400 transition "
+                    onClick={() => handleDelete(item.id)}>Eliminar
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -152,14 +184,14 @@ const BodiesRegister = () => {
         </span>
         <div className="flex space-x-2">
           <Button
-            className="text-gray-500 bg-gray-100 px-3 py-1 rounded-lg"
+            className="text-white bg-blue-700 px-3 py-1 rounded-lg hover:underline hover:bg-blue-500"
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
           >
             Previous
           </Button>
           <Button
-            className="text-gray-500 bg-gray-100 px-3 py-1 rounded-lg"
+            className="text-white bg-blue-700 px-3 py-1 rounded-lg hover:underline hover:bg-blue-500"
             onClick={() =>
               setCurrentPage((prev) =>
                 prev < totalPages ? prev + 1 : prev

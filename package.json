@@ -34,6 +34,8 @@
     "react-icons": "^5.5.0",
     "react-router-dom": "^6.10.0",
     "recharts": "^2.15.2",
+    "sweetalert2": "^11.19.1",
+    "sweetalert2-react-content": "^5.1.0",
     "tailwind-merge": "^3.1.0",
     "tailwindcss-animate": "^1.0.7"
   },
