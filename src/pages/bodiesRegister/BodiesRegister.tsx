@@ -8,7 +8,6 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { CuerpoInhumado, MappedBody } from "../../models/CuerpoInhumado"; 
 
 
-
 const BodiesRegister = () => {
 
   const [bodiesData, setBodiesData] = useState<MappedBody[]>([]);
@@ -47,6 +46,19 @@ const BodiesRegister = () => {
       )
     );
   });
+
+  //Inicio Logica de la paginacion
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 2;
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = filteredData.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+  //Fin logica Pginacion
+
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
@@ -105,7 +117,7 @@ const BodiesRegister = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredData.map((item) => (
+            {currentItems.map((item) => (
               <TableRow key={item.id}>
                 <TableCell>{item.name}</TableCell>
                 <TableCell>{item.date}</TableCell> 
@@ -121,7 +133,9 @@ const BodiesRegister = () => {
                 <TableCell>{item.document}</TableCell>
                 <TableCell>{item.description}</TableCell> 
                 <TableCell>
-                  <Button className="bg-slate-700 text-blue-500 hover:underline">View</Button>
+                  <Button className="bg-blue-600 text-blue-500 hover:underline mr-1">Ver</Button>
+                  <Button className="bg-yellow-400 hover:underline mr-1 ">Editar</Button>
+                  <Button className="bg-red-500  hover:underline">Eliminar</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -129,12 +143,32 @@ const BodiesRegister = () => {
         </Table>
       </div>
 
-      {/* Pagination (Opcional) */}
+      {/* Pagination */}
       <div className="flex justify-between items-center text-gray-500 mt-4">
-        <span>Showing {filteredData.length} </span>
+        <span>
+          Mostrando {startIndex + 1} -{" "}
+          {endIndex > filteredData.length ? filteredData.length : endIndex} de{" "}
+          {filteredData.length}
+        </span>
         <div className="flex space-x-2">
-          <Button className="text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">Previous</Button>
-          <Button className="text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">Next</Button>
+          <Button
+            className="text-gray-500 bg-gray-100 px-3 py-1 rounded-lg"
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+          <Button
+            className="text-gray-500 bg-gray-100 px-3 py-1 rounded-lg"
+            onClick={() =>
+              setCurrentPage((prev) =>
+                prev < totalPages ? prev + 1 : prev
+              )
+            }
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
         </div>
       </div>
     </div>
