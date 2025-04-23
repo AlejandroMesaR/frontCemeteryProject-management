@@ -9,7 +9,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({ children, className
     <button
       ref={ref}
       {...rest}
-      className={`text-white px-4 py-2  rounded-2xl hover:bg-blue-700 transition-shadow shadow-md ${className}`}
+      className={`text-white px-4 py-2 rounded-2xl transition-shadow shadow-md ${className}`}
     >
       {children}
     </button>
