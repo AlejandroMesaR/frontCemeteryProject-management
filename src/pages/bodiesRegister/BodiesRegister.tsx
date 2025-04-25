@@ -7,6 +7,7 @@ import { getAllBodies, deleteBodyById } from "../../services/managementService";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
 import { CuerpoInhumado, MappedBody } from "../../models/CuerpoInhumado"; 
 import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
 
 const BodiesRegister = () => {
@@ -14,10 +15,17 @@ const BodiesRegister = () => {
   const [bodiesData, setBodiesData] = useState<MappedBody[]>([]);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("All");
+
+  //ver
+  const [allBodies, setAllBodies] = useState<CuerpoInhumado[]>([]);
+  const [selectedBody, setSelectedBody] = useState<CuerpoInhumado | null>(null);
+  const [showModal, setShowModal] = useState(false);
   
     useEffect(() => {
     const fetchData = async () => {
       const data: CuerpoInhumado[] = await getAllBodies();
+      setAllBodies(data); 
+
       const mappedData: MappedBody[] = data.map((item) => ({
         id: item.idCadaver,
         name: `${item.nombre} ${item.apellido}`,
@@ -69,10 +77,13 @@ const handleDelete = async (id: string) => {
     text: 'Esta acción eliminará el cuerpo de manera permanente.',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#e14a4a',
-    cancelButtonColor: '#e14a4a',
     confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar'
+    cancelButtonText: 'Cancelar',
+    customClass: {
+      confirmButton: 'bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded mr-2',
+      cancelButton: 'bg-gray-300 text-black hover:bg-gray-400 px-4 py-2 rounded'
+    },
+    buttonsStyling: false 
   });
 
   if (result.isConfirmed) {
@@ -88,6 +99,16 @@ const handleDelete = async (id: string) => {
 };
 
 //Fin alerta de eliminar
+
+//Ver
+const handleViewDetails = (id: string) => {
+  const fullBody = allBodies.find((body) => body.idCadaver === id);
+  if (fullBody) {
+    setSelectedBody(fullBody);
+    setShowModal(true);
+  }
+};
+
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
@@ -121,7 +142,8 @@ const handleDelete = async (id: string) => {
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex items-center space-x-2">
-          <Button className="flex items-center bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500">
+          <Button 
+            className="flex items-center bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500">
             <span>Registrar Cuerpo</span>
           </Button>
 
@@ -162,7 +184,10 @@ const handleDelete = async (id: string) => {
                 <TableCell>{item.document}</TableCell>
                 <TableCell>{item.description}</TableCell> 
                 <TableCell>
-                  <Button className="bg-blue-600 ho  hover:underline hover:bg-blue-400 transition mr-1">Ver</Button>
+                  <Button 
+                    className="bg-blue-600 ho  hover:underline hover:bg-blue-400 transition mr-1"
+                    onClick={() => handleViewDetails(item.id)}
+                    >Ver</Button>
                   <Button className="bg-yellow-600 hover:underline mr-1 hover:bg-yellow-400 transition ">Editar</Button>
                   <Button
                     className="bg-red-600 text-white hover:underline hover:bg-red-400 transition "
@@ -203,8 +228,39 @@ const handleDelete = async (id: string) => {
           </Button>
         </div>
       </div>
+      {/* Modal de detalles */}
+      {showModal && selectedBody && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-semibold mb-8 text-center  ">Detalles del Cuerpo</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <p><strong>Nombre:</strong> {selectedBody.nombre} {selectedBody.apellido}</p>
+              <p><strong>Documento:</strong> {selectedBody.documentoIdentidad}</p>
+              <p><strong>Protocolo Necropsia:</strong> {selectedBody.numeroProtocoloNecropsia}</p>
+              <p><strong>Causa de Muerte:</strong> {selectedBody.causaMuerte}</p>
+              <p><strong>Fecha de Nacimiento:</strong> {selectedBody.fechaNacimiento}</p>
+              <p><strong>Fecha de Defunción:</strong> {selectedBody.fechaDefuncion.toString()}</p>
+              <p><strong>Fecha de Ingreso:</strong> {selectedBody.fechaIngreso}</p>
+              <p><strong>Fecha de Inhumación:</strong> {selectedBody.fechaInhumacion}</p>
+              <p><strong>Fecha de Exhumación:</strong> {selectedBody.fechaExhumacion}</p>
+              <p><strong>Funcionario Receptor:</strong> {selectedBody.funcionarioReceptor} ({selectedBody.cargoFuncionario})</p>
+              <p><strong>Autoridad Remitente:</strong> {selectedBody.autoridadRemitente} ({selectedBody.cargoAutoridadRemitente})</p>
+              <p><strong>Autoridad Exhumación:</strong> {selectedBody.autoridadExhumacion} ({selectedBody.cargoAutoridadExhumacion})</p>
+              <p><strong>Estado:</strong> {selectedBody.estado}</p>
+              <p className="col-span-2"><strong>Observaciones:</strong> {selectedBody.observaciones}</p>
+            </div>
+            <div className="flex justify-end mt-4">
+              <Button
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                onClick={() => setShowModal(false)}
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
-};
-
+);
+}
 export default BodiesRegister;
