@@ -150,8 +150,8 @@ export default function DocumentsPage() {
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
       <div className="">
-        <h2 className="text-xl font-semibold">Registro de Descargas</h2>
-        <p className="text-gray-500 text-sm">Historial de documentos descargados del sistema</p>
+        <h2 className="text-xl font-semibold">Registro de Documentos</h2>
+        <p className="text-gray-500 text-sm">Historial de documentos del sistema</p>
         <div className="mt-4 flex items-center gap-2">
           <Search className="w-5 h-5 text-gray-400" />
           <Input

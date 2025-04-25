@@ -1,5 +1,4 @@
 import {Link, Outlet} from "react-router-dom";
-import NewRecordDialog from "../../components/dialog/NewRecordDialog";
 
 const DocumentsLayout = () => {
   return (
@@ -9,10 +8,6 @@ const DocumentsLayout = () => {
         <div>
           <h1 className="text-2xl font-extrabold">Repositorio de Documentos</h1>
           <p className="text-gray-500">Gestiona toda la documentación y registros del cementerio</p>
-        </div>
-        <div className="flex items-center gap-4">
-          {/* Botón que abre el Dialog para crear nuevo registro */}
-          <NewRecordDialog />
         </div>
       </header>
       
