@@ -1,4 +1,3 @@
-// src/utils/auth.ts
 import { jwtDecode } from "jwt-decode";
 
 type JwtPayload = {
@@ -32,6 +31,19 @@ export function getUserRole(): string | null {
     
     return null;
   } catch {
+    return null;
+  }
+}
+
+export function getUserId(): string | null {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  try {
+    const decoded = jwtDecode<JwtPayload>(token);
+    return decoded.sub || null; // El campo 'sub' contiene el usuarioId
+  } catch (error) {
+    console.error("Error decoding token to get userId:", error);
     return null;
   }
 }

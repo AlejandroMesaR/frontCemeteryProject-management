@@ -2,42 +2,35 @@ import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/utilsComponents/Input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { File, Download, Search } from "lucide-react";
-import { getAllDocuments, deleteDocument, createDocument } from "../../services/documentService";
+import { Download, Search } from "lucide-react";
+import { getAllDocuments, deleteDocument } from "../../services/documentService";
 import { Documento, MappedDocument } from "../../models/Documento";
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import { FaFilter } from 'react-icons/fa';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
+import { getUserId, isAuthenticated } from '../../utils/auth';
 
 export default function DocumentsPage() {
   const [documentsData, setDocumentsData] = useState<MappedDocument[]>([]);
-  const [allDocuments, setAllDocuments] = useState<Documento[]>([]);
-  const [selectedDocument, setSelectedDocument] = useState<Documento | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newDocument, setNewDocument] = useState<Omit<Documento, 'id'>>({
-    nombre: '',
-    fechaGeneracion: new Date().toISOString(),
-    tipo: 'REPORTE', // Valor por defecto, podríamos hacer un dropdown si hay más tipos
-    usuarioId: 'user-demo', // Podríamos obtener el usuario actual desde el token
-  });
+  const [filterType, setFilterType] = useState("All");
   const [search, setSearch] = useState("");
-  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const data: Documento[] = await getAllDocuments();
-        setAllDocuments(data);
         const mappedData: MappedDocument[] = data.map((item) => ({
           id: item.id,
           title: item.nombre,
           date: item.fechaGeneracion,
           type: item.tipo,
           relatedTo: item.usuarioId,
-          status: "Procesado",
         }));
         setDocumentsData(mappedData);
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        console.error('Error al cargar documentos:', error);
         Swal.fire('Error', `No se pudieron cargar los documentos: ${errorMessage}`, 'error');
       }
     };
@@ -45,12 +38,30 @@ export default function DocumentsPage() {
     fetchData();
   }, []);
 
-  const filteredDocuments = documentsData.filter((doc) =>
-    doc.title.toLowerCase().includes(search.toLowerCase())
-  );
+  // Normalizar texto para búsqueda
+  function normalizeText(text: string): string {
+    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
+
+  // Formatear fecha sin hora
+  function formatDateWithoutTime(dateString: string): string {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  const filteredDocuments = documentsData.filter((doc) => {
+    const searchTerm = normalizeText(search);
+    return (
+      (filterType === "All" || doc.type === filterType) &&
+      normalizeText(doc.title).includes(searchTerm)
+    );
+  });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 2;
+  const itemsPerPage = 10; // Cambiar a 10 documentos por página
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentItems = filteredDocuments.slice(startIndex, endIndex);
@@ -59,7 +70,7 @@ export default function DocumentsPage() {
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
       title: '¿Estás seguro?',
-      text: 'Esta acción eliminará el documento de manera permanente.',
+      text: 'Esta acción eliminará el registro de descarga de manera permanente.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
@@ -74,9 +85,8 @@ export default function DocumentsPage() {
     if (result.isConfirmed) {
       try {
         await deleteDocument(id);
-        Swal.fire('Eliminado', 'El documento ha sido eliminado exitosamente.', 'success');
+        Swal.fire('Eliminado', 'El registro ha sido eliminado exitosamente.', 'success');
         setDocumentsData((prev) => prev.filter((item) => item.id !== id));
-        setAllDocuments((prev) => prev.filter((item) => item.id !== id));
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         Swal.fire('Error', `Ocurrió un error al eliminar: ${errorMessage}`, 'error');
@@ -84,54 +94,90 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleViewDetails = (id: string) => {
-    const fullDocument = allDocuments.find((doc) => doc.id === id);
-    if (fullDocument) {
-      setSelectedDocument(fullDocument);
-      setShowModal(true);
+  const handleDownload = async () => {
+    if (!isAuthenticated()) {
+      Swal.fire('Error', 'No estás autenticado. Por favor, inicia sesión.', 'error');
+      return;
     }
-  };
 
-  const handleCreateDocument = async () => {
+    const userId = getUserId();
+    if (!userId) {
+      Swal.fire('Error', 'No se pudo obtener el ID del usuario. Por favor, inicia sesión nuevamente.', 'error');
+      return;
+    }
+
     try {
-      const createdDocument: Documento = await createDocument(newDocument);
-      setAllDocuments((prev) => [...prev, createdDocument]);
-      const mappedDocument: MappedDocument = {
-        id: createdDocument.id,
-        title: createdDocument.nombre,
-        date: createdDocument.fechaGeneracion,
-        type: createdDocument.tipo,
-        relatedTo: createdDocument.usuarioId,
-        status: "Procesado",
-      };
-      setDocumentsData((prev) => [...prev, mappedDocument]);
-      setShowCreateModal(false);
-      Swal.fire('Creado', 'El documento ha sido creado exitosamente.', 'success');
+      const response = await fetch(`http://localhost:8083/reportes/descargar?usuarioId=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Authorization': `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al descargar el documento');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'reporte.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      // Refrescar la lista de documentos (el backend ya crea el registro)
+      const data: Documento[] = await getAllDocuments();
+      const mappedData: MappedDocument[] = data.map((item) => ({
+        id: item.id,
+        title: item.nombre,
+        date: item.fechaGeneracion,
+        type: item.tipo,
+        relatedTo: item.usuarioId,
+      }));
+      setDocumentsData(mappedData);
+
+      Swal.fire('Éxito', 'El documento ha sido descargado exitosamente.', 'success');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      Swal.fire('Error', `Ocurrió un error al crear el documento: ${errorMessage}`, 'error'); 
+      Swal.fire('Error', `Ocurrió un error al descargar el documento: ${errorMessage}`, 'error');
     }
   };
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
       <div className="">
-        <h2 className="text-xl font-semibold">Repositorio de Documentos</h2>
-        <p className="text-gray-500 text-sm">Gestiona toda la documentación y registros del cementerio</p>
+        <h2 className="text-xl font-semibold">Registro de Descargas</h2>
+        <p className="text-gray-500 text-sm">Historial de documentos descargados del sistema</p>
         <div className="mt-4 flex items-center gap-2">
           <Search className="w-5 h-5 text-gray-400" />
           <Input
-            placeholder="Buscar documentos..."
+            placeholder="Buscar registros..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full"
+            className="w-full border rounded-lg p-2"
           />
-          <Button variant="outline">Filtrar</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="flex items-center space-x-2 bg-blue-700 border px-4 py-2 text-white hover:bg-blue-500">
+                <FaFilter />
+                <span>{filterType === "All" ? "Todos" : filterType}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setFilterType("All")}>Todos</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilterType("REPORTE")}>Reporte</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilterType("DIGITALIZACION")}>Digitalización</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
-            className="bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500"
-            onClick={() => setShowCreateModal(true)}
+            className="bg-green-200 text-green-700 hover:bg-green-300"
+            onClick={handleDownload}
           >
-            Crear Documento
+            <Download className="w-4 h-4 mr-1" /> Descargar Reporte
           </Button>
         </div>
       </div>
@@ -139,36 +185,23 @@ export default function DocumentsPage() {
       <Table className="mt-6">
         <TableHeader>
           <TableRow>
-            <TableHead>ID del Documento</TableHead>
-            <TableHead>Título</TableHead>
-            <TableHead>Relacionado con</TableHead>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Fecha de Descarga</TableHead>
+            <TableHead>Usuario</TableHead>
             <TableHead>Tipo</TableHead>
-            <TableHead>Estado</TableHead>
             <TableHead>Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {currentItems.map((doc) => (
             <TableRow key={doc.id}>
-              <TableCell>{doc.id}</TableCell>
               <TableCell>{doc.title}</TableCell>
+              <TableCell>{formatDateWithoutTime(doc.date)}</TableCell>
               <TableCell>{doc.relatedTo}</TableCell>
               <TableCell>
                 <span className="px-2 py-1 text-xs rounded-full bg-gray-200">{doc.type}</span>
               </TableCell>
-              <TableCell>
-                <span className="px-2 py-1 text-xs rounded-full bg-gray-800 text-white">{doc.status}</span>
-              </TableCell>
               <TableCell className="flex gap-2">
-                <Button
-                  className="border bg-gray-200 text-black hover:bg-gray-500 hover:text-white"
-                  onClick={() => handleViewDetails(doc.id)}
-                >
-                  <File className="w-4 h-4 mr-1" /> Ver
-                </Button>
-                <Button className="bg-green-200 text-green-700">
-                  <Download className="w-4 h-4 mr-1" /> Descargar
-                </Button>
                 <Button
                   className="bg-red-600 text-white hover:underline hover:bg-red-400 transition"
                   onClick={() => handleDelete(doc.id)}
@@ -208,82 +241,6 @@ export default function DocumentsPage() {
           </Button>
         </div>
       </div>
-
-      {/* Modal de detalles */}
-      {showModal && selectedDocument && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-8 text-center">Detalles del Documento</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <p><strong>ID:</strong> {selectedDocument.id}</p>
-              <p><strong>Nombre:</strong> {selectedDocument.nombre}</p>
-              <p><strong>Fecha de Generación:</strong> {selectedDocument.fechaGeneracion}</p>
-              <p><strong>Tipo:</strong> {selectedDocument.tipo}</p>
-              <p><strong>Usuario ID:</strong> {selectedDocument.usuarioId}</p>
-            </div>
-            <div className="flex justify-end mt-4">
-              <Button
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                onClick={() => setShowModal(false)}
-              >
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de creación */}
-      {showCreateModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-8 text-center">Crear Nuevo Documento</h3>
-            <div className="grid grid-cols-1 gap-4 text-sm">
-              <div>
-                <label className="block mb-1"><strong>Nombre:</strong></label>
-                <Input
-                  type="text"
-                  value={newDocument.nombre}
-                  onChange={(e) => setNewDocument({ ...newDocument, nombre: e.target.value })}
-                  className="w-full border rounded-lg p-2"
-                />
-              </div>
-              <div>
-                <label className="block mb-1"><strong>Tipo:</strong></label>
-                <Input
-                  type="text"
-                  value={newDocument.tipo}
-                  onChange={(e) => setNewDocument({ ...newDocument, tipo: e.target.value })}
-                  className="w-full border rounded-lg p-2"
-                />
-              </div>
-              <div>
-                <label className="block mb-1"><strong>Usuario ID:</strong></label>
-                <Input
-                  type="text"
-                  value={newDocument.usuarioId}
-                  onChange={(e) => setNewDocument({ ...newDocument, usuarioId: e.target.value })}
-                  className="w-full border rounded-lg p-2"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end mt-4 gap-2">
-              <Button
-                className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
-                onClick={() => setShowCreateModal(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                onClick={handleCreateDocument}
-              >
-                Crear
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
