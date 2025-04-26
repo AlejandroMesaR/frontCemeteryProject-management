@@ -17,7 +17,6 @@ export default {
       animation: {
         'slide-in-from-right-5': 'slide-in-from-right-5 0.4s ease-out',
       },
-
   		colors: {
   			primary: {
   				DEFAULT: 'hsl(var(--primary))',

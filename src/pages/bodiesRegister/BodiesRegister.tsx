@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { FaFileExport, FaSearch, FaFilter } from "react-icons/fa";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"; 
-import Button  from "../../components/utilsComponents/Button"; 
+import Button from "../../components/utilsComponents/Button";
 import { Input } from "../../components/utilsComponents/Input"; 
 import { getAllBodies, deleteBodyById } from "../../services/managementService"; 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
@@ -15,23 +15,24 @@ const BodiesRegister = () => {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("All");
   
-    useEffect(() => {
-    const fetchData = async () => {
-      const data: CuerpoInhumado[] = await getAllBodies();
-      const mappedData: MappedBody[] = data.map((item) => ({
-        id: item.idCadaver,
-        name: `${item.nombre} ${item.apellido}`,
-        date: item.fechaIngreso,
-        state: item.estado,
-        document: item.documentoIdentidad,
-        description: item.observaciones || "Sin observaciones",
-       
-      }));
-      setBodiesData(mappedData);
-    };
 
-    fetchData();
-  }, []);
+  const fetchData = async () => {
+    const data: CuerpoInhumado[] = await getAllBodies();
+    const mappedData: MappedBody[] = data.map((item) => ({
+      id: item.idCadaver,
+      name: `${item.nombre} ${item.apellido}`,
+      date: item.fechaIngreso,
+      state: item.estado,
+      document: item.documentoIdentidad,
+      description: item.observaciones || "Sin observaciones",
+     
+    }));
+    setBodiesData(mappedData);
+  };
+
+  useEffect(() => {
+      fetchData();
+    }, []);
 
   function normalizeText(text: string): string {
     return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -69,8 +70,8 @@ const handleDelete = async (id: string) => {
     text: 'Esta acción eliminará el cuerpo de manera permanente.',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#e14a4a',
-    cancelButtonColor: '#e14a4a',
+    confirmButtonColor: '#38e10b',
+    cancelButtonColor: '#ef0f08',
     confirmButtonText: 'Sí, eliminar',
     cancelButtonText: 'Cancelar'
   });
