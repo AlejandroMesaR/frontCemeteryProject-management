@@ -1,10 +1,10 @@
 import { NichoCuerpoCreate } from '@/models/NichoCuerpo';
 import {apiManagement} from '../api/axios';
+import { CuerpoInhumado } from "../models/CuerpoInhumado";
 
 
 export const getAllBodies = async () => {
     try {
-      // Hacemos la petición al endpoint
       const response = await apiManagement.get('/cuerposinhumados');
       return response.data;
     } catch (error) {
@@ -23,6 +23,17 @@ export const deleteBodyById = async (idCadaver: string) => {
     throw error;
   }
 };
+
+  export const createBody = async (nuevoCuerpo: Omit<CuerpoInhumado, "idCadaver">) => {
+    try {
+      const response = await apiManagement.post('/cuerposinhumados', nuevoCuerpo);
+      return response.data;
+    } catch (error) {
+      console.error("Error al crear el cuerpo:", error);
+      throw error;
+    }
+  };
+  
 
 export const getAllNichos = async () => {
   try {
