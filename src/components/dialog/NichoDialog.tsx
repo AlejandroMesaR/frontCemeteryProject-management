@@ -103,7 +103,6 @@ export default function NichoDialog({ codigo, trigger, onAssigned }: NichoDialog
         <DialogHeader>
           <div className="flex items-center space-x-2">
             {/* Icono temático */}
-            <span className="text-xl">🕊️</span>
             <DialogTitle className="text-2xl font-bold text-gray-800">
               Información del Nicho
             </DialogTitle>

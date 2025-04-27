@@ -49,8 +49,7 @@ const CemeteryMap = () => {
       confirmButtonText: 'Aceptar',
       customClass: {
         confirmButton: 'bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded'
-      },
-      buttonsStyling: false 
+      }
     });
 
     fetchNichos();
