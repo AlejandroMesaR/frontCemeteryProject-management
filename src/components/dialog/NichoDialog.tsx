@@ -11,14 +11,14 @@ import {
 } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { getNichoById, getCuerpoInhumadoByNicho,releaseNicho } from "@/services/managementService";
-import { Nicho } from "@/models/nicho";
+import { Nicho } from "@/models/Nicho";
 import { CuerpoInhumado } from "../../models/CuerpoInhumado";
 import { Button } from "@/components/ui/button";
 
 interface NichoDialogProps {
   codigo: string;
   trigger: React.ReactNode;
-  onAssigned: () => void; 
+  onAssigned: (message:string) => void; 
 }
 
 export default function NichoDialog({ codigo, trigger, onAssigned }: NichoDialogProps) {
@@ -86,7 +86,7 @@ export default function NichoDialog({ codigo, trigger, onAssigned }: NichoDialog
       const updated = await getNichoById(nicho.codigo);
       setNicho({ ...updated, estado: updated.estado }); 
       setCuerpo(null);
-      await onAssigned();
+      await onAssigned("Se liberó correctamente el nicho.");
     } catch (err) {
       console.error("Error liberando nicho:", err);
       alert("No se pudo liberar el nicho");

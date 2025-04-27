@@ -9,20 +9,22 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import Button from "../../components/utilsComponents/Button";
 import { createNichoCuerpo } from "@/services/managementService";
-import { AssignNichoDialogProps } from "@/models";
+import { AssignNichoDialogProps,Nicho,CuerpoInhumado } from "@/models";
+import { getAvailableNichos, getUnassignedBodies } from "@/services/managementService";
+
 
 export default function AssignNichoDialog({
   trigger,
-  nichos,
-  cuerpos,
-  onAssigned
+  onAssigned 
 }: AssignNichoDialogProps) {
   const [open, setOpen] = useState(false);
-  const [selectedNicho, setSelectedNicho] = useState<string>(nichos[0]?.codigo || "");
-  const [selectedCuerpo, setSelectedCuerpo] = useState<string>(cuerpos[0]?.idCadaver || "");
+  const [nichos, setNichos] = useState<Nicho[]>([]);
+  const [cuerpos, setCuerpos] = useState<CuerpoInhumado[]>([]);
+  const [selectedNicho, setSelectedNicho] = useState<string>("");
+  const [selectedCuerpo, setSelectedCuerpo] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +37,7 @@ export default function AssignNichoDialog({
         codigoNicho: selectedNicho,
         idCadaver: selectedCuerpo
       });
-      await onAssigned();
+      await onAssigned("Se ha asignado el nicho correctamente.");
       setOpen(false);
     } catch (err) {
       console.error("Error asignando nicho:", err);
@@ -44,6 +46,27 @@ export default function AssignNichoDialog({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const [nichosDisponibles, cuerposNoAsignados] = await Promise.all([
+          getAvailableNichos(),
+          getUnassignedBodies()
+        ]);
+
+        setNichos(nichosDisponibles);
+        setCuerpos(cuerposNoAsignados);
+        setSelectedNicho(nichosDisponibles[0]?.codigo || "");
+        setSelectedCuerpo(cuerposNoAsignados[0]?.idCadaver || "");
+  
+      } catch (err) {
+        console.error("Error cargando datos disponibles:", err);
+      }
+    };
+  
+    loadOptions();
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

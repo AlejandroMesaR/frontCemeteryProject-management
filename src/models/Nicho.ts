@@ -1,4 +1,3 @@
-import { CuerpoInhumado } from "./CuerpoInhumado";
 
 export interface Nicho {
   codigo: string;
@@ -8,7 +7,5 @@ export interface Nicho {
 
 export interface AssignNichoDialogProps {
   trigger: React.ReactNode;
-  nichos: Nicho[];
-  cuerpos: CuerpoInhumado[];
-  onAssigned: () => Promise<void>; // callback para refrescar datos
+  onAssigned: (message:string) => Promise<void>; // callback para refrescar datos
 }

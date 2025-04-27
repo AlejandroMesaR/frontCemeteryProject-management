@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import Button from "../../components/utilsComponents/Button";
 import Card from "../../components/card/Card";
-import { getAllNichos,getAllBodies } from "../../services/managementService"
-import { Nicho,CuerpoInhumado } from "../../models";
+import { getAllNichos } from "../../services/managementService"
+import { Nicho } from "../../models";
 import { getNicheStyle, getNicheNumber,sortNichosByNumber} from "./functionsCementery"
 import NichoDialog from "../../components/dialog/NichoDialog";
 import AssignNichoDialog from "../../components/dialog/AssignNichoDialog";
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
 const CemeteryMap = () => {
   const [nichos, setNichos] = useState<Nicho[]>([]);
-  const [cuerpos, setCuerpos] = useState<CuerpoInhumado[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,16 +29,31 @@ const CemeteryMap = () => {
     try {
       setLoading(true);
       const data = await getAllNichos();
-      const dataCuerpos = await getAllBodies();
-      setCuerpos(dataCuerpos);
+
       setNichos(data);
       setError(null);
-    } catch (err) {
-      console.error("Error fetching nichos:", err);
-      setError("Error al cargar los datos de nichos o los cuerpos. Por favor, intente nuevamente.");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error('Error al cargar documentos:', error);
+      Swal.fire('Error', `No se pudó cargar la informacion de los nichos: ${errorMessage}`, 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const popupSuccess = async (message:string) => {
+    Swal.fire({
+      title: 'Confirmación',
+      text: message,
+      icon: 'success',
+      confirmButtonText: 'Aceptar',
+      customClass: {
+        confirmButton: 'bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded'
+      },
+      buttonsStyling: false 
+    });
+
+    fetchNichos();
   };
 
   useEffect(() => {
@@ -80,12 +96,11 @@ const CemeteryMap = () => {
                 <NichoDialog
                   key={nicho.codigo}
                   codigo={nicho.codigo}
-                  onAssigned={fetchNichos}
+                  onAssigned={popupSuccess}
                   trigger={
                     <button
                       className={`h-12 w-full flex items-center justify-center rounded-lg text-sm font-medium border shadow-sm transition-all ${getNicheStyle(nicho.estado)}`}
                       title={nicho.ubicacion}
-                      
                     >
                       {getNicheNumber(nicho.ubicacion)}
                     </button>
@@ -112,9 +127,7 @@ const CemeteryMap = () => {
           </div>
           <AssignNichoDialog
             trigger={<Button className="w-full bg-gray-600 hover:bg-gray-800 text-white font-semibold rounded-lg">Asignar nuevo Nicho</Button>}
-            nichos={nichos}
-            cuerpos={cuerpos}
-            onAssigned={fetchNichos}
+            onAssigned={popupSuccess}
           />
         </Card>
       </div>

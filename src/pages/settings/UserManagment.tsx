@@ -1,14 +1,16 @@
 import { useState, useEffect} from "react";
 import { Input } from "../../components/utilsComponents/Input";
 import Card  from "../../components/card/Card";
+import Button  from "../../components/utilsComponents/Button"; 
 import {Table,TableHeader,TableBody,TableRow,TableHead,TableCell,} from "@/components/ui/table";
 import EditUserDialog from "../../components/dialog/EditUserDialog";
-import DeleteUserDialog from "../../components/dialog/DeleteUserDialog";
 import RegsiterUser from "../../components/dialog/RegisterUserDialog";
-import { getAllUsers } from "../../services/authService"; 
+import { getAllUsers, deleteUser } from "../../services/authService"; 
 import { User } from "../../models/User"; 
 import { capitalize } from "lodash";
 import { useToast } from "../../components/toast/useToast";
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
 const UserManagement = () => {
 
@@ -23,7 +25,9 @@ const UserManagement = () => {
       setUsers(data);
       setFilteredUsers(data);
     } catch (error) {
-      console.error("Error cargando usuarios:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error('Error al cargar documentos:', error);
+      Swal.fire('Error', `No se pudó cargar la informacion de los usuarios: ${errorMessage}`, 'error');
     }
   };
 
@@ -40,6 +44,33 @@ const UserManagement = () => {
       )
     );
   }, [search, users]);
+
+  const handleDelete = async (id: number, username: string) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: `Esta acción eliminará el usuario de manera permanente al usuario ${username}.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        confirmButton: 'bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded mr-2',
+        cancelButton: 'bg-gray-300 text-black hover:bg-gray-400 px-4 py-2 rounded'
+      },
+      buttonsStyling: false 
+    });
+  
+    if (result.isConfirmed) {
+      try {
+        await deleteUser(id);
+        Swal.fire('Eliminado', `El usuario ${username} ha sido eliminado exitosamente.`, 'success');
+        fetchUsers(); // Refresh the list after deletion
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {
+        Swal.fire('Error', 'Ocurrió un error al eliminar.', 'error');
+      }
+    }
+  };
 
   return (
     <Card className="p-6 space-y-4">
@@ -91,19 +122,17 @@ const UserManagement = () => {
                 </span>
               </TableCell>
               <TableCell className="flex gap-2">
-              <EditUserDialog
-                user={user}
-                onComplete={(message, type) => {
-                  showToast(message,type);
-                  fetchUsers();
-                }}
-              />
-                <DeleteUserDialog 
-                  user={user} 
-                  onComplete={(message,type) => {
+                <EditUserDialog
+                  user={user}
+                  onComplete={(message, type) => {
                     showToast(message,type);
                     fetchUsers();
-                }}/>
+                  }}
+                />
+                <Button
+                    className="bg-red-600 text-white hover:underline hover:bg-red-400 transition "
+                    onClick={() => handleDelete(user.id, user.username)}>Eliminar
+                </Button>
               </TableCell>
             </TableRow>
           ))}

@@ -1,6 +1,7 @@
 import { NichoCuerpoCreate } from '@/models/NichoCuerpo';
 import {apiManagement} from '../api/axios';
 import { CuerpoInhumado } from "../models/CuerpoInhumado";
+import { Nicho } from "../models/Nicho";
 
 
 export const getAllBodies = async () => {
@@ -68,7 +69,6 @@ export const getNichoById = async (codigo: string) => {
 export const getCuerpoInhumadoByNicho = async (codigo: string) => {
   try {
     const response = await apiManagement.get(`/nichoscuerpos/nicho/${codigo}`);
-    console.log(response.data);
     return response.data; // Añade esta línea para devolver los datos
   } catch (error) {
     console.error("Error al obtener el cuerpo inhumado por nicho:", error);
@@ -92,9 +92,32 @@ export const createNichoCuerpo = async (payload: NichoCuerpoCreate) => {
 export const releaseNicho = async (codigoNicho: string) => {
   // pide al backend el DTO de la relación activa
   const relacion = await apiManagement.get(`/nichoscuerpos/nichoByID/${codigoNicho}`);
-  console.log("relacion", relacion.data.id);
   // borra la relación
   await apiManagement.delete(`/nichoscuerpos/${relacion.data.id}`);
+};
+
+export const getAvailableNichos = async (): Promise<Nicho[]> => {
+  try {
+    const { data } = await apiManagement.get("/nichos/disponibles");
+    return data;
+  } catch (err: any) {
+    const message =
+      err.response?.data?.message ||
+      `Error al obtener nichos disponibles (status ${err.response?.status})`;
+    throw new Error(message);
+  }
+};
+
+export const getUnassignedBodies = async (): Promise<CuerpoInhumado[]> => {
+  try {
+    const { data } = await apiManagement.get("/cuerposinhumados/no-asignados");
+    return data;
+  } catch (err: any) {
+    const message =
+      err.response?.data?.message ||
+      `Error al obtener cuerpos no asignados (status ${err.response?.status})`;
+    throw new Error(message);
+  }
 };
 
   
