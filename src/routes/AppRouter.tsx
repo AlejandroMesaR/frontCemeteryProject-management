@@ -9,7 +9,7 @@ import SettingsLayout from '../pages/settings/SettingsLayout';
 import GeneralSettings from '../pages/settings/GeneralSettings';
 import UsersManagment from '../pages/settings/UserManagment';
 import DocumentsPage from '../pages/documents/DocumentsPage';
-import GeneralsStadistics from '@/pages/statistics/GeneralsStadistics';
+import GeneralsStadistics from '@/pages/statistics/GeneralStatisticsPage';
 import OccupancyAnalysisPage from '@/pages/statistics/OccupancyAnalysisPage';
 import DocumentationStatistics from '@/pages/statistics/DocumentationStatistics';
 import DigitalizedDocumentsPage from '../pages/documents/DigitalizedDocumentsPage';
