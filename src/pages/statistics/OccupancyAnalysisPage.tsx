@@ -1,125 +1,214 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
-import { useMemo } from "react";
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
+import { getAllBodies, getAllNichos, getAllNichosCuerpos } from "../../services/managementService";
 
-const data = [
-  { name: "Occupied", value: 2924 },
-  { name: "Available", value: 826 },
-  { name: "Reserved", value: 215 },
-];
+// Interfaces (extraídas de la información proporcionada)
+interface Nicho {
+  codigo: string;
+  ubicacion: string;
+  estado: "DISPONIBLE" | "OCUPADO" | "MANTENIMIENTO";
+}
 
-const COLORS = ["#1f2937", "#e5e7eb", "#d1d5db"];
+interface CuerpoInhumado {
+  idCadaver: string;
+  nombre: string;
+  apellido: string;
+  documentoIdentidad: string;
+  numeroProtocoloNecropsia: string;
+  causaMuerte: string;
+  fechaNacimiento: string;
+  fechaDefuncion: Date;
+  fechaIngreso: string;
+  fechaInhumacion: string;
+  fechaExhumacion: string;
+  funcionarioReceptor: string;
+  cargoFuncionario: string;
+  autoridadRemitente: string;
+  cargoAutoridadRemitente: string;
+  autoridadExhumacion: string;
+  cargoAutoridadExhumacion: string;
+  estado: string;
+  observaciones: string;
+}
+
+interface NichoCuerpoCreate {
+  codigoNicho: string;
+  idCadaver: string;
+}
 
 export default function OccupancyAnalysisPage() {
-  const totalCapacity = 3750;
-  const totalOccupied = 2924;
-  const availablePlots = 826;
-  const reservedPlots = 215;
-  const projectedYears = 5;
-  const projectedMonths = 3;
+  const [nichoChartData, setNichoChartData] = useState<{ name: string; value: number }[]>([]);
+  const [cuerpoChartData, setCuerpoChartData] = useState<{ name: string; value: number }[]>([]);
+  const [totalBodies, setTotalBodies] = useState(0);
+  const [totalNichos, setTotalNichos] = useState(0);
+  const [cuerposAsignados, setCuerposAsignados] = useState(0);
+  const [porcentajeOcupacion, setPorcentajeOcupacion] = useState(0);
 
-  const barData = useMemo(
-    () => [
-      { name: "Occupied", value: totalOccupied },
-      { name: "Available", value: availablePlots },
-      { name: "Reserved", value: reservedPlots },
-    ],
-    []
-  );
+  // Colores para el gráfico de nichos
+  const NICHO_COLORS = ["#4CAF50", "#2196F3", "#FF5722"]; // Verde, Azul, Naranja
+
+  // Colores para el gráfico de cuerpos
+  const CUERPO_COLORS = ["#AB47BC", "#42A5F5"]; // Púrpura, Azul claro
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Obtener cantidad de cuerpos
+        const cuerpos: CuerpoInhumado[] = await getAllBodies();
+        setTotalBodies(cuerpos.length);
+
+        // Obtener nichos
+        const nichos: Nicho[] = await getAllNichos();
+        setTotalNichos(nichos.length);
+
+        // Calcular nichos ocupados, disponibles y en mantenimiento
+        const ocupadosCount = nichos.filter(nicho => nicho.estado === "OCUPADO").length;
+        const disponiblesCount = nichos.filter(nicho => nicho.estado === "DISPONIBLE").length;
+        const mantenimientoCount = nichos.filter(nicho => nicho.estado === "MANTENIMIENTO").length;
+
+        // Obtener asignaciones de cuerpos a nichos
+        const nichosCuerpos: NichoCuerpoCreate[] = await getAllNichosCuerpos();
+        setCuerposAsignados(nichosCuerpos.length);
+
+        // Calcular porcentaje de ocupación
+        if (nichos.length > 0) {
+          const porcentaje = Math.round((nichosCuerpos.length / nichos.length) * 100);
+          setPorcentajeOcupacion(porcentaje);
+        }
+
+        // Preparar datos para el gráfico de nichos
+        setNichoChartData([
+          { name: "Ocupados", value: ocupadosCount },
+          { name: "Disponibles", value: disponiblesCount },
+          { name: "En Mantenimiento", value: mantenimientoCount },
+        ]);
+
+        // Preparar datos para el gráfico de cuerpos
+        const cuerposNoAsignados = cuerpos.length - nichosCuerpos.length;
+        setCuerpoChartData([
+          { name: "Asignados", value: nichosCuerpos.length },
+          { name: "No Asignados", value: cuerposNoAsignados >= 0 ? cuerposNoAsignados : 0 },
+        ]);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+        console.error("Error al cargar estadísticas de ocupación:", error);
+        Swal.fire("Error", `No se pudieron cargar las estadísticas: ${errorMessage}`, "error");
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-      <Card className="col-span-1">
+    <div className="p-6 space-y-6">
+
+      {/* Tarjeta 1: Estadísticas de ocupación (rectangular, abarca todo el ancho) */}
+      <Card className="w-full">
         <CardHeader>
-          <CardTitle>Occupancy Analysis</CardTitle>
+          <CardTitle>Estadísticas de Ocupación</CardTitle>
           <CardDescription>
-            Detailed analysis of cemetery occupancy
+            Detalles de cuerpos y nichos
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col md:flex-row gap-6">
-          <div className="w-full md:w-1/2 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label
-                >
-                  {data.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <p className="text-center text-sm text-muted-foreground mt-2">
-              Occupancy by section chart
-            </p>
-          </div>
-          <div className="w-full md:w-1/2 space-y-2">
-            <h4 className="font-semibold">Current Status</h4>
-            <div className="text-sm flex justify-between">
-              <span>Total Capacity</span>
-              <span>{totalCapacity.toLocaleString()} plots</span>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Cantidad de Cuerpos</p>
+              <p className="text-lg font-semibold">{totalBodies.toLocaleString()}</p>
             </div>
-            <div className="text-sm flex justify-between">
-              <span>Total Occupied</span>
-              <span>
-                {totalOccupied.toLocaleString()} plots (
-                {((totalOccupied / totalCapacity) * 100).toFixed(0)}%)
-              </span>
+            <div>
+              <p className="text-sm text-muted-foreground">Cantidad de Nichos</p>
+              <p className="text-lg font-semibold">{totalNichos.toLocaleString()}</p>
             </div>
-            <div className="text-sm flex justify-between">
-              <span>Available Plots</span>
-              <span>
-                {availablePlots.toLocaleString()} plots (
-                {((availablePlots / totalCapacity) * 100).toFixed(0)}%)
-              </span>
+            <div>
+              <p className="text-sm text-muted-foreground">Cuerpos Asignados a Nichos</p>
+              <p className="text-lg font-semibold">{cuerposAsignados.toLocaleString()}</p>
             </div>
-            <div className="text-sm flex justify-between">
-              <span>Reserved Plots</span>
-              <span>
-                {reservedPlots.toLocaleString()} plots (
-                {((reservedPlots / totalCapacity) * 100).toFixed(0)}%)
-              </span>
+            <div>
+              <p className="text-sm text-muted-foreground">Porcentaje de Ocupación</p>
+              <p className="text-lg font-semibold">{porcentajeOcupacion}%</p>
             </div>
-
-            <h4 className="font-semibold pt-4">Projections</h4>
-            <p className="text-sm text-muted-foreground">
-              Based on current trends, the cemetery will reach full capacity in
-              approximately {projectedYears} years and {projectedMonths} months.
-            </p>
-            <Button className="mt-2">View Detailed Projections</Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="col-span-1">
-        <CardHeader>
-          <CardTitle>Occupancy Breakdown</CardTitle>
-          <CardDescription>
-            Bar chart representation of current occupancy status
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={barData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value">
-                {barData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* Gráficos de pastel (en paralelo) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Tarjeta 2: Gráfico de pastel (Nichos) */}
+        <Card className="col-span-1">
+          <CardHeader>
+            <CardTitle>Análisis de Ocupación de Nichos</CardTitle>
+            <CardDescription>
+              Distribución actual de los nichos
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center">
+            <div className="w-full h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={nichoChartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label
+                  >
+                    {nichoChartData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={NICHO_COLORS[index % NICHO_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => `${value} nichos`} />
+                  <Legend wrapperStyle={{ fontSize: "12px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="text-center text-sm text-black mt-2">
+              Distribución de nichos
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Tarjeta 3: Gráfico de pastel (Cuerpos Asignados vs. No Asignados) */}
+        <Card className="col-span-1">
+          <CardHeader>
+            <CardTitle>Distribución de Cuerpos</CardTitle>
+            <CardDescription>
+              Cuerpos asignados vs. no asignados
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center">
+            <div className="w-full h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={cuerpoChartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label
+                  >
+                    {cuerpoChartData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={CUERPO_COLORS[index % CUERPO_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => `${value} cuerpos`} />
+                  <Legend wrapperStyle={{ fontSize: "12px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="text-center text-sm text-black mt-2">
+              Distribución de cuerpos
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
