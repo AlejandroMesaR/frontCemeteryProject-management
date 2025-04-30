@@ -148,4 +148,41 @@ export const getLastBodiesIngress = async (cantidad: number) => {
   }
 }
 
+
+/**
+ * Searches for bodies by name, ID, or document number
+ * @param query The search term
+ * @returns Array of matching CuerpoInhumado objects
+ */
+export const searchBodies = async (query: string): Promise<CuerpoInhumado[]> => {
+  try {
+    const response = await apiManagement.get(`/cuerposinhumados/search`, {
+      params: { query },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error searching bodies:', error);
+    throw error;
+  }
+};
+
+/**
+ * Gets nicho information by body ID
+ * @param idCuerpo The body ID
+ * @returns Nicho object or null if not assigned
+ */
+export const getNichoByIdCuerpo = async (idCuerpo: string): Promise<Nicho | null> => {
+  try {
+    const response = await apiManagement.get(`/nichoscuerpos/cuerpo/${idCuerpo}`);
+    return response.data;
+  } catch (error: any) {
+    if (error.response && error.response.status === 404) {
+      return null;
+    }
+
+    // Otros errores sí deben registrarse
+    console.error('Error inesperado al obtener el nicho:', error);
+    throw error;
+  }
+};
   

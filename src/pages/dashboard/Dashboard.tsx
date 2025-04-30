@@ -1,17 +1,22 @@
 import Header from '../../components/header/Header';
-import { Card,CardContent,CardHeader,CardTitle, CardFooter} from '@/components/ui/card';
-import { Users, Boxes, CircleOff, LayoutDashboard} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Users, Boxes, CircleOff, LayoutDashboard, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
-import { getAllBodies, getAllNichos, getAvailableNichos, getLastBodiesIngress} from '../../services/managementService';
+import { getAllBodies, getAllNichos, getAvailableNichos, getLastBodiesIngress, searchBodies, getNichoByIdCuerpo } from '../../services/managementService';
 import { formatDate } from '../cemetery/functionsCementery';
 import { getAllUsers } from '../../services/authService';
 import { Link } from 'react-router-dom';
 import { CuerpoInhumado } from '@/models';
+import { Nicho } from '@/models/Nicho';
 import { getOccupancyColorClass } from './DashboardUtils';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useDebounce } from '@/components/utilsComponents/useDebounce';
+import { capitalize } from 'lodash';
 
 function Dashboard() {
   const [totalCuerpos, setTotalCuerpos] = useState(0);
@@ -20,6 +25,15 @@ function Dashboard() {
   const [nichosDisponibles, setNichosDisponibles] = useState(0);
   const [porcentajeOcupacion, setPorcentajeOcupacion] = useState(0);
   const [ultimosIngresos, setUltimosIngresos] = useState<CuerpoInhumado[]>([]);
+  const [search, setSearch] = useState("");
+  const [filteredBodies, setFilteredBodies] = useState<CuerpoInhumado[]>([]);
+  const [selectedBody, setSelectedBody] = useState<CuerpoInhumado | null>(null);
+  const [selectedNicho, setSelectedNicho] = useState<Nicho | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [noResults, setNoResults] = useState(false);
+  
+  // Use debounce to avoid too many API calls
+  const debouncedSearch = useDebounce(search, 500);
 
   const fetchData = async () => {
     try {
@@ -64,6 +78,55 @@ function Dashboard() {
       console.error("Error al cargar el último ingreso:", error);
     }
   }
+
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      setFilteredBodies([]);
+      setNoResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const results = await searchBodies(query);
+      setFilteredBodies(results);
+      setNoResults(results.length === 0);
+    } catch (error) {
+      console.error("Error al buscar cuerpos:", error);
+      setFilteredBodies([]);
+      setNoResults(true);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const fetchNichoInfo = async (idCadaver: string) => {
+    try {
+      const nicho = await getNichoByIdCuerpo(idCadaver);
+
+      if (nicho === null) {
+        console.log("No se encontró información del nicho para el cuerpo seleccionado.");
+        setSelectedNicho(null);
+      }else {
+        console.log("Información del nicho:", nicho);
+        setSelectedNicho(nicho);
+      }
+
+    } catch (error) {
+      console.error("Error al obtener información del nicho:", error);
+      setSelectedNicho(null);
+    }
+  };
+
+  const handleBodySelect = (body: CuerpoInhumado) => {
+    setSelectedBody(body);
+    fetchNichoInfo(body.idCadaver);
+  };
+
+  // Effect for the debounced search
+  useEffect(() => {
+    handleSearch(debouncedSearch);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     fetchData();
@@ -132,27 +195,9 @@ function Dashboard() {
                 </div>
                 <Progress 
                   value={porcentajeOcupacion} 
-                  className={`
-                    h-2
-                    ${porcentajeOcupacion >= 90 ? 'bg-red-500' : 
-                      porcentajeOcupacion >= 70 ? 'bg-amber-500' : 
-                      'bg-green-500'}
-                  `}
+                  className="h-2"
                 />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden border-l-4 border-l-purple-500">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
-                <Users className="mr-2 h-4 w-4 text-purple-500" />
-                Usuarios del Sistema
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalUsuarios}</div>
-              <p className="text-xs text-gray-500">Administradores y operadores</p>
             </CardContent>
           </Card>
         </div>
@@ -176,7 +221,7 @@ function Dashboard() {
                           <h4 className="font-medium text-gray-900">{cuerpo.nombre} {cuerpo.apellido}</h4>
                           <div className="flex items-center text-sm text-gray-500 mt-1">
                             <span className="mr-2">ID: {cuerpo.documentoIdentidad}</span>
-                            <Badge variant="outline" className= "bg-purple-100 text-purple-800 ">
+                            <Badge variant="outline" className="bg-purple-100 text-purple-800">
                               {cuerpo.causaMuerte}
                             </Badge>
                           </div>
@@ -210,15 +255,134 @@ function Dashboard() {
             </CardFooter>
           </Card>
 
-          {/* Resumen del Mapa */}
+          {/* Buscador de Cuerpos Inhumados */}
           <Card className="col-span-7 flex flex-col">
-            <h3 className="text-lg font-semibold mb-2">Resumen del Mapa del Cementerio</h3>
-            <p className="text-sm text-gray-600">
-              Aquí se mostrará el estado actual de ocupación por sección
-            </p>
-            <div className="mt-4 flex items-center justify-center h-full bg-gray-100 text-gray-400 flex-grow">
-              Visualización del mapa del cementerio
-            </div>
+            <CardHeader className="pb-2 border-b">
+              <CardTitle className="text-lg font-semibold flex items-center">
+                <Search className="mr-2 h-5 w-5" />
+                Buscador de Cuerpos Inhumados
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Ingresa el nombre, apellido, nombre y apellido, cédula o código para consultar información sobre un cuerpo inhumado.
+              </p>
+            </CardHeader>
+            
+            <CardContent className="p-4 space-y-4">
+              {/* Barra de búsqueda */}
+              <div className="flex space-x-2">
+                <Input
+                  placeholder="Buscar por nombre, cédula o código..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+
+              {/* Estado de búsqueda */}
+              {isSearching && (
+                <div className="space-y-2">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              )}
+
+              {/* Mensaje de no resultados */}
+              {noResults && !isSearching && search.trim() !== "" && (
+                <div className="text-center py-4 text-gray-500">
+                  No se encontraron resultados para "{search}"
+                </div>
+              )}
+
+              {/* Resultados de búsqueda */}
+              {!isSearching && filteredBodies.length > 0 && (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {filteredBodies.map((body) => (
+                    <Card
+                      key={body.idCadaver}
+                      onClick={() => handleBodySelect(body)}
+                      className={`p-3 hover:bg-gray-50 cursor-pointer transition ${
+                        selectedBody?.idCadaver === body.idCadaver ? "border-blue-500 bg-blue-50" : ""
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-semibold">{body.nombre} {body.apellido}</p>
+                          <p className="text-sm text-gray-500">{capitalize(body.estado)}</p>
+                        </div>
+                        <Badge variant="outline" className="bg-gray-100">
+                          ID: {body.idCadaver}
+                        </Badge>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Detalles del cuerpo seleccionado */}
+              {selectedBody && (
+                <Card className="p-4 border border-gray-200 bg-gray-50 mt-4">
+                  <h4 className="font-semibold text-lg mb-3 text-gray-800">Información del Cuerpo</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-sm text-gray-500">Nombre Completo</p>
+                      <p className="font-medium">{selectedBody.nombre} {selectedBody.apellido}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-gray-500">Fecha de Ingreso</p>
+                      <p className="font-medium">{formatDate(selectedBody.fechaIngreso)}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-gray-500">Causa de Muerte</p>
+                      <Badge className="mt-1 bg-purple-100 text-purple-800 hover:bg-purple-300 border-none">
+                        {capitalize(selectedBody.causaMuerte)}
+                      </Badge>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-gray-500">Fecha de Defunción</p>
+                      <p className="font-medium">{formatDate(selectedBody.fechaDefuncion)}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-gray-500">Estado</p>
+                      <Badge className="mt-1 bg-green-100 text-green-800 hover:bg-green-300 border-none">
+                        {capitalize(selectedBody.estado)}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 pt-3 border-t border-gray-200">
+                    <h5 className="font-semibold mb-2">Información del Nicho</h5>
+                    
+                    {selectedNicho != null ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-sm text-gray-500">Código</p>
+                          <p className="font-medium">{selectedNicho.codigo}</p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm text-gray-500">Ubicación</p>
+                          <p className="font-medium">{selectedNicho.ubicacion}</p>
+                        </div>
+                        
+                      </div>
+                    ) : (selectedNicho === null) ? (
+                      <div className="text-gray-500 italic">
+                        Este cuerpo no está asignado a un nicho.
+                      </div>
+                    ):(
+                      <div className="text-gray-500 italic">
+                        Cargando información del nicho...
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
+            </CardContent>
           </Card>
         </div>
       </div>
