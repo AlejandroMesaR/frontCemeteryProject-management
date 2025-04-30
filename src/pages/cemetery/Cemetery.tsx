@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
 import { getAllNichos } from "../../services/managementService";
 import { Nicho } from "../../models";
 import { getNicheStyle, getNicheNumber, sortNichosByNumber } from "./functionsCementery";
@@ -9,7 +8,7 @@ import NichoDialog from "../../components/dialog/NichoDialog";
 import AssignNichoDialog from "../../components/dialog/AssignNichoDialog";
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
-import { Search, Filter, RefreshCw } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

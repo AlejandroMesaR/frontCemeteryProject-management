@@ -1,12 +1,11 @@
 import Header from '../../components/header/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Users, Boxes, CircleOff, LayoutDashboard, Search } from 'lucide-react';
+import { Boxes, CircleOff, LayoutDashboard, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { getAllBodies, getAllNichos, getAvailableNichos, getLastBodiesIngress, searchBodies, getNichoByIdCuerpo } from '../../services/managementService';
 import { formatDate } from '../cemetery/functionsCementery';
-import { getAllUsers } from '../../services/authService';
 import { Link } from 'react-router-dom';
 import { CuerpoInhumado } from '@/models';
 import { Nicho } from '@/models/Nicho';
@@ -20,7 +19,6 @@ import { capitalize } from 'lodash';
 
 function Dashboard() {
   const [totalCuerpos, setTotalCuerpos] = useState(0);
-  const [totalUsuarios, setTotalUsuarios] = useState(0);
   const [totalNichos, setTotalNichos] = useState(0);
   const [nichosDisponibles, setNichosDisponibles] = useState(0);
   const [porcentajeOcupacion, setPorcentajeOcupacion] = useState(0);
@@ -42,10 +40,6 @@ function Dashboard() {
       setTotalCuerpos(cuerpos.length);
 
       fetchUltimosIngresos();
-
-      // Obtener cantidad de usuarios registrados
-      const usuarios = await getAllUsers();
-      setTotalUsuarios(usuarios.length);
 
       const nichos = await getAllNichos();
       setTotalNichos(nichos.length);   
