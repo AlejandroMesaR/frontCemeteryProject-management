@@ -32,6 +32,7 @@ export default function AssignNichoDialog({
     e.preventDefault();
     setLoading(true);
     setError(null);
+    
     try {
       await createNichoCuerpo({
         codigoNicho: selectedNicho,
@@ -47,29 +48,36 @@ export default function AssignNichoDialog({
     }
   };
 
-  useEffect(() => {
-    const loadOptions = async () => {
-      try {
-        const [nichosDisponibles, cuerposNoAsignados] = await Promise.all([
-          getAvailableNichos(),
-          getUnassignedBodies()
-        ]);
+  const loadOptions = async () => {
+    try {
+      const [nichosDisponibles, cuerposNoAsignados] = await Promise.all([
+        getAvailableNichos(),
+        getUnassignedBodies()
+      ]);
 
-        setNichos(nichosDisponibles);
-        setCuerpos(cuerposNoAsignados);
-        setSelectedNicho(nichosDisponibles[0]?.codigo || "");
-        setSelectedCuerpo(cuerposNoAsignados[0]?.idCadaver || "");
-  
-      } catch (err) {
-        console.error("Error cargando datos disponibles:", err);
-      }
-    };
-  
+      setNichos(nichosDisponibles);
+      setCuerpos(cuerposNoAsignados);
+      setSelectedNicho(nichosDisponibles[0]?.codigo || "");
+      setSelectedCuerpo(cuerposNoAsignados[0]?.idCadaver || "");
+
+    } catch (err) {
+      console.error("Error cargando datos disponibles:", err);
+    }
+  };
+
+  useEffect(() => {
     loadOptions();
   }, []);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open}
+      onOpenChange={ async (isOpen)  => {
+        setOpen(isOpen);
+        if (isOpen) {
+          await loadOptions();
+        }
+      }}
+    >
       <DialogTrigger asChild>
           {trigger}
       </DialogTrigger>

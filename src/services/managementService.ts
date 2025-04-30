@@ -120,4 +120,32 @@ export const getUnassignedBodies = async (): Promise<CuerpoInhumado[]> => {
   }
 };
 
+export const actualizarEstadoNicho = async (codigo: string, nuevoEstado: string) => {
+  try {
+    const response = await apiManagement.put(`/nichos/actualizar-estado/${codigo}`, {}, {
+      params:{
+        estado: nuevoEstado
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error al actualizar el estado del nicho:", error);
+    throw error;
+  }
+}
+
+export const getLastBodiesIngress = async (cantidad: number) => {
+  try {
+    const response = await apiManagement.get('/cuerposinhumados/ultimos',{
+      params:{
+        cantidad: cantidad
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener el último ingreso:", error);
+    throw error;
+  }
+}
+
   
