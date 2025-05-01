@@ -1,7 +1,16 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react"; // Añadimos useEffect
 
 const DocumentsLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Redirigir a /documents/allDocuments si estamos en /documents
+  useEffect(() => {
+    if (location.pathname === "/documents" || location.pathname === "/documents/") {
+      navigate("allDocuments", { replace: true });
+    }
+  }, [location, navigate]);
 
   // Determinar la pestaña activa según la URL
   const isAllDocumentsActive = location.pathname.includes("allDocuments");

@@ -57,7 +57,7 @@ export default function GeneralStatisticsPage() {
   const [totalUsuarios, setTotalUsuarios] = useState(0);
   const [cuerposRecientes, setCuerposRecientes] = useState(0);
   const [usersByRoleData, setUsersByRoleData] = useState<{ name: string; value: number }[]>([]);
-  const [inhumationsByMonthData, setInhumationsByMonthData] = useState<{ month: string; inhumations: number }[]>([]);
+  const [weeklyInhumationsData, setWeeklyInhumationsData] = useState<{ week: string; count: number; date: Date }[]>([]);
 
   // Colores para el gráfico de usuarios por rol
   const USER_ROLE_COLORS = ["#FF9800", "#F44336", "#2196F3", "#4CAF50"]; // Naranja, Rojo, Azul, Verde
@@ -81,26 +81,44 @@ export default function GeneralStatisticsPage() {
         }).length;
         setCuerposRecientes(recientes);
 
-        // Calcular inhumaciones por mes (últimos 12 meses)
-        const monthlyCounts: { [key: string]: number } = {};
-        const today = new Date();
+        // Calcular inhumaciones por semana (últimas 12 semanas)
+        const now = new Date();
+        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+        const weeklyCounts: { [key: string]: number } = {};
+
+        // Generar las últimas 12 semanas (de más antiguo a más reciente)
+        const weeks: { week: string; date: Date }[] = [];
         for (let i = 11; i >= 0; i--) {
-          const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-          const monthKey = date.toLocaleString('default', { month: 'short', year: '2-digit' }); // Ejemplo: "Ene 25"
-          monthlyCounts[monthKey] = 0;
+          const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i * 7);
+          const weekKey = `${weekStart.getDate()}-${weekStart.toLocaleString("default", { month: "short" })}`;
+          weeklyCounts[weekKey] = 0;
+          weeks.push({ week: weekKey, date: weekStart });
         }
+
+        // Contar inhumaciones por semana
         cuerpos.forEach(cuerpo => {
           const fechaInhumacion = new Date(cuerpo.fechaInhumacion);
-          const monthKey = fechaInhumacion.toLocaleString('default', { month: 'short', year: '2-digit' });
-          if (Object.keys(monthlyCounts).includes(monthKey)) {
-            monthlyCounts[monthKey]++;
+          if (fechaInhumacion >= threeMonthsAgo) {
+            // Encontrar la semana correspondiente
+            for (let i = 0; i < weeks.length; i++) {
+              const weekStart = weeks[i].date;
+              const nextWeekStart = i < weeks.length - 1 ? weeks[i + 1].date : now;
+              if (fechaInhumacion >= weekStart && fechaInhumacion < nextWeekStart) {
+                const weekKey = weeks[i].week;
+                weeklyCounts[weekKey] = (weeklyCounts[weekKey] || 0) + 1;
+                break;
+              }
+            }
           }
         });
-        const inhumationsByMonth = Object.keys(monthlyCounts).map(month => ({
-          month,
-          inhumations: monthlyCounts[month],
+
+        // Crear los datos para la gráfica, asegurando el orden correcto
+        const weeklyInhumations = weeks.map(({ week, date }) => ({
+          week,
+          date,
+          count: weeklyCounts[week] || 0,
         }));
-        setInhumationsByMonthData(inhumationsByMonth);
+        setWeeklyInhumationsData(weeklyInhumations);
 
         // Obtener cantidad de usuarios registrados
         const usuarios: User[] = await getAllUsers();
@@ -147,6 +165,13 @@ export default function GeneralStatisticsPage() {
 
   return (
     <div className="p-6 space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold">Estadísticas Generales</h2>
+        <p className="text-sm text-muted-foreground">
+          Resumen general del sistema
+        </p>
+      </div>
+
       {/* Tarjeta 1: Estadísticas generales (rectangular, abarca todo el ancho) */}
       <Card className="w-full">
         <CardHeader>
@@ -191,27 +216,33 @@ export default function GeneralStatisticsPage() {
 
       {/* Gráficas (en paralelo) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Gráfica 1: Tendencia de Inhumaciones (Gráfico de líneas) */}
+        {/* Gráfica 1: Tendencia de Inhumaciones (Gráfico de líneas, 12 semanas) */}
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Tendencia de Inhumaciones</CardTitle>
             <CardDescription>
-              Inhumaciones por mes (últimos 12 meses)
+              Inhumaciones por semana (últimas 12 semanas)
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center">
             <div className="w-full h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={inhumationsByMonthData}>
-                  <XAxis dataKey="month" />
-                  <YAxis />
+                <LineChart data={weeklyInhumationsData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                  <XAxis dataKey="week" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip formatter={(value: number) => `${value} inhumaciones`} />
-                  <Line type="monotone" dataKey="inhumations" stroke={LINE_COLOR} />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke={LINE_COLOR}
+                    strokeWidth={2}
+                    dot={{ r: 4, fill: LINE_COLOR }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
             <p className="text-center text-sm text-black mt-2">
-              Inhumaciones mensuales
+              Inhumaciones semanales
             </p>
           </CardContent>
         </Card>
