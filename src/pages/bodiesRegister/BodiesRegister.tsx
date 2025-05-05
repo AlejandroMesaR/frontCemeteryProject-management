@@ -3,7 +3,7 @@ import { FaFileExport, FaSearch, FaFilter } from "react-icons/fa";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"; 
 import Button  from "../../components/utilsComponents/Button"; 
 import { Input } from "../../components/utilsComponents/Input"; 
-import { getAllBodies, deleteBodyById } from "../../services/managementService"; 
+import { getAllBodies, deleteBodyById, createBody } from "../../services/managementService"; 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
 import { CuerpoInhumado, MappedBody } from "../../models/CuerpoInhumado"; 
 import Swal from 'sweetalert2';
@@ -100,6 +100,30 @@ const handleDelete = async (id: string) => {
 
 //Fin alerta de eliminar
 
+// Alerta de creacion de cuerpo
+const [showRegisterModal, setShowRegisterModal] = useState(false);
+const [newBodyData, setNewBodyData] = useState<Omit<CuerpoInhumado, "idCadaver">>({
+  nombre: "",
+  apellido: "",
+  documentoIdentidad: "",
+  numeroProtocoloNecropsia: "",
+  causaMuerte: "",
+  fechaNacimiento: "",
+  fechaDefuncion: new Date(),
+  fechaIngreso: "",
+  fechaInhumacion: "",
+  fechaExhumacion: "",
+  funcionarioReceptor: "",
+  cargoFuncionario: "",
+  autoridadRemitente: "",
+  cargoAutoridadRemitente: "",
+  autoridadExhumacion: "",
+  cargoAutoridadExhumacion: "",
+  estado: "",
+  observaciones: "",
+});
+
+
 //Ver
 const handleViewDetails = (id: string) => {
   const fullBody = allBodies.find((body) => body.idCadaver === id);
@@ -142,10 +166,13 @@ const handleViewDetails = (id: string) => {
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex items-center space-x-2">
-          <Button 
-            className="flex items-center bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500">
-            <span>Registrar Cuerpo</span>
-          </Button>
+        <Button 
+          className="flex items-center bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500"
+          onClick={() => setShowRegisterModal(true)}
+        >
+          <span>Registrar Cuerpo</span>
+        </Button>
+
 
           <Button className="flex items-center space-x-2 bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500">
             <FaFileExport />
@@ -260,6 +287,88 @@ const handleViewDetails = (id: string) => {
           </div>
         </div>
       )}
+      {showRegisterModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+          <h3 className="text-xl font-semibold mb-4 text-center">Registrar Nuevo Cuerpo</h3>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            {Object.entries(newBodyData).map(([key, value]) => (
+              key !== "estado" ? ( // todos los campos menos estado
+                <div key={key} className="flex flex-col">
+                  <label className="text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
+                  <input
+                    type={key.includes("fechaIngreso") ? "datetime-local" :
+                          key.includes("fecha") ? "date" : "text"}
+                    value={
+                      key.includes("fechaIngreso")
+                        ? (value ? (value as string).slice(0, 16) : "")
+                        : key.includes("fecha")
+                          ? (value ? new Date(value).toISOString().split('T')[0] : "")
+                          : (value as string)
+                    }
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setNewBodyData((prev) => ({
+                        ...prev,
+                        [key]: newValue
+                      }));
+                    }}
+                    className="border p-2 rounded"
+                  />
+                </div>
+              ) : null
+            ))}
+            {/* Campo especial estado */}
+            <div className="flex flex-col">
+              <label className="text-gray-700">Estado</label>
+              <select
+                value={newBodyData.estado}
+                onChange={(e) => setNewBodyData((prev) => ({
+                  ...prev,
+                  estado: e.target.value
+                }))}
+                className="border p-2 rounded"
+              >
+                <option value="">Seleccione estado</option>
+                <option value="INHUMADO">Inhumado</option>
+                <option value="EXHUMADO">Exhumado</option>
+              </select>
+            </div>
+          </div>
+    
+          <div className="flex justify-end gap-4 mt-6">
+            <Button
+              className="bg-gray-400 text-black px-4 py-2 rounded hover:bg-gray-500"
+              onClick={() => setShowRegisterModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-500"
+              onClick={async () => {
+                try {
+                  const bodyToSend = {
+                    ...newBodyData,
+                    fechaIngreso: newBodyData.fechaIngreso
+                      ? newBodyData.fechaIngreso + ":00"
+                      : "", // agregar segundos para datetime-local
+                  };
+                  await createBody(bodyToSend);
+                  Swal.fire('Éxito', 'El cuerpo fue registrado exitosamente.', 'success');
+                  setShowRegisterModal(false);
+                  window.location.reload(); 
+                } catch (error) {
+                  Swal.fire('Error', 'Ocurrió un error al registrar el cuerpo.', 'error');
+                }
+              }}
+            >
+              Registrar
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+
     </div>
 );
 }
