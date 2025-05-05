@@ -1,4 +1,4 @@
-import { Nicho } from "../../models/nicho";
+import { Nicho } from "../../models/Nicho";
 
 export const getNicheStyle = (estado: string) => {
   switch (estado) {
@@ -49,4 +49,18 @@ export const sortNichosByNumber = (nichos: Nicho[]): Nicho[] => {
   });
 
   console.log
+};
+
+export const formatDate = (dateString: string | Date | null | undefined) => {
+    if (!dateString) return "No disponible";
+    try {
+      const date = typeof dateString === "string" ? new Date(dateString) : dateString;
+      return date.toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      });
+    } catch {
+      return "Formato inválido";
+    }
 };

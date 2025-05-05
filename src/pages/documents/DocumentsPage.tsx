@@ -15,6 +15,7 @@ export default function DocumentsPage() {
   const [documentsData, setDocumentsData] = useState<MappedDocument[]>([]);
   const [filterType, setFilterType] = useState("All");
   const [search, setSearch] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false); // Estado para controlar el mensaje de carga
 
   useEffect(() => {
     const fetchData = async () => {
@@ -106,6 +107,8 @@ export default function DocumentsPage() {
       return;
     }
 
+    setIsGenerating(true); // Mostrar el mensaje de carga
+
     try {
       const response = await fetch(`http://localhost:8083/reportes/descargar?usuarioId=${userId}`, {
         method: 'GET',
@@ -141,9 +144,11 @@ export default function DocumentsPage() {
       setDocumentsData(mappedData);
 
       Swal.fire('Éxito', 'El documento ha sido descargado exitosamente.', 'success');
+      setIsGenerating(false); // Ocultar el mensaje de carga después del pop-up
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       Swal.fire('Error', `Ocurrió un error al descargar el documento: ${errorMessage}`, 'error');
+      setIsGenerating(false); // Ocultar el mensaje de carga después del pop-up
     }
   };
 
@@ -173,12 +178,17 @@ export default function DocumentsPage() {
               <DropdownMenuItem onClick={() => setFilterType("DIGITALIZACION")}>Digitalización</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            className="bg-green-200 text-green-700 hover:bg-green-300"
-            onClick={handleDownload}
-          >
-            <Download className="w-4 h-4 mr-1" /> Descargar Reporte
-          </Button>
+          <div className="flex flex-col gap-1">
+            {isGenerating && (
+                <p className="text-sm text-gray-500">El archivo se está generando...</p>
+              )}
+            <Button
+              className="bg-green-200 text-green-700 hover:bg-green-300"
+              onClick={handleDownload}
+            >
+              <Download className="w-4 h-4 mr-1" /> Descargar Reporte
+            </Button>
+          </div>
         </div>
       </div>
 

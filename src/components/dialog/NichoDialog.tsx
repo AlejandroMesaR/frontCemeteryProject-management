@@ -10,10 +10,11 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
-import { getNichoById, getCuerpoInhumadoByNicho,releaseNicho } from "@/services/managementService";
+import { getNichoById, getCuerpoInhumadoByNicho,releaseNicho,actualizarEstadoNicho } from "@/services/managementService";
 import { Nicho } from "@/models/Nicho";
 import { CuerpoInhumado } from "../../models/CuerpoInhumado";
 import { Button } from "@/components/ui/button";
+import { formatDate } from "../../pages/cemetery/functionsCementery";
 
 interface NichoDialogProps {
   codigo: string;
@@ -28,55 +29,58 @@ export default function NichoDialog({ codigo, trigger, onAssigned }: NichoDialog
   const [error, setError] = useState<string | null>(null);
   const [releasing, setReleasing] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const nichoData = await getNichoById(codigo);
-        setNicho(nichoData);
-        let cuerpoData: CuerpoInhumado | null = null;
-
-        if (nichoData.estado === "OCUPADO") {
-          try {
-            cuerpoData = await getCuerpoInhumadoByNicho(codigo);
-          } catch {
-            cuerpoData = null;
-          }
-        }
-        // Recalcular estado respetando MANTENIMIENTO
-        const estado =
-          nichoData.estado === "MANTENIMIENTO"
-            ? "MANTENIMIENTO"
-            : cuerpoData
-            ? "OCUPADO"
-            : "DISPONIBLE";
-
-        setNicho({ ...nichoData, estado });
-        setCuerpo(cuerpoData);
-        setError(null);
-      } catch (err) {
-        console.error(err);
-        setError("Error al cargar los datos. Por favor, intente nuevamente.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [codigo]);
-
-  const formatDate = (dateString: string | Date | null | undefined) => {
-    if (!dateString) return "No disponible";
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const date = typeof dateString === "string" ? new Date(dateString) : dateString;
-      return date.toLocaleDateString("es-ES", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric"
-      });
-    } catch {
-      return "Formato inválido";
+      const nichoData = await getNichoById(codigo);
+      setNicho(nichoData);
+      let cuerpoData: CuerpoInhumado | null = null;
+
+      if (nichoData.estado === "OCUPADO") {
+        try {
+          cuerpoData = await getCuerpoInhumadoByNicho(codigo);
+        } catch {
+          cuerpoData = null;
+        }
+      }
+      // Recalcular estado respetando MANTENIMIENTO
+      const estado =
+        nichoData.estado === "MANTENIMIENTO"
+          ? "MANTENIMIENTO"
+          : cuerpoData
+          ? "OCUPADO"
+          : "DISPONIBLE";
+
+      setNicho({ ...nichoData, estado });
+      setCuerpo(cuerpoData);
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError("Error al cargar los datos. Por favor, intente nuevamente.");
+    } finally {
+      setLoading(false);
     }
   };
+
+  const updateStateNicho = async (nuevoEstado: string, nicho:Nicho) => {
+    if (!nicho) return;
+    setLoading(true);
+    try {
+      await actualizarEstadoNicho(nicho.codigo, nuevoEstado);
+      const updated = await getNichoById(nicho.codigo);
+      setNicho({ ...updated, estado: nuevoEstado });
+      await onAssigned("Se actualizó correctamente el estado del nicho.");
+    } catch (err) {
+      console.error("Error actualizando estado:", err);
+      alert("No se pudo actualizar el estado del nicho");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchData();
+  }, [codigo]);
 
   const handleRelease = async () => {
     if (!nicho) return;
@@ -213,6 +217,24 @@ export default function NichoDialog({ codigo, trigger, onAssigned }: NichoDialog
               </Button>
             </>
           )}
+          {nicho?.estado === "DISPONIBLE" && (
+            <Button
+              variant="secondary"
+              className="bg-yellow-500 hover:bg-yellow-300 hover:text-amber-800 text-white"
+              onClick={() => updateStateNicho("MANTENIMIENTO",nicho)}
+            >
+              {releasing ? "Actualizando el estado..." : "Realizar mantenimiento"}
+            </Button>
+          )}
+          {nicho?.estado === "MANTENIMIENTO" && (
+            <Button
+              variant="secondary"
+              className="bg-green-600 hover:bg-green-300 hover:text-green-900 text-white"
+              onClick={() => updateStateNicho("DISPONIBLE",nicho)}
+            >
+              {releasing ? "Actualizando el estado..." : "Terminar mantenimiento"}
+            </Button>
+          )}   
           <DialogClose asChild>
             <Button variant="outline" className="border-gray-300 text-gray-700">
               Cerrar

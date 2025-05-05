@@ -23,7 +23,7 @@ function AppRouter() {
   return (
     <>
       <Sidebar />
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 overflow-auto">
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
