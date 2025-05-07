@@ -1,12 +1,10 @@
-import Header from '../../components/header/Header';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Boxes, CircleOff, LayoutDashboard, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
-import { getAllBodies, getAllNichos, getAvailableNichos, getLastBodiesIngress, searchBodies, getNichoByIdCuerpo } from '../../services/managementService';
+import { getAllBodies, getAllNichos, getAvailableNichos, searchBodies, getNichoByIdCuerpo } from '../../services/managementService';
 import { formatDate } from '../cemetery/functionsCementery';
-import { Link } from 'react-router-dom';
 import { CuerpoInhumado } from '@/models';
 import { Nicho } from '@/models/Nicho';
 import { getOccupancyColorClass } from './DashboardUtils';
@@ -22,7 +20,6 @@ function Dashboard() {
   const [totalNichos, setTotalNichos] = useState(0);
   const [nichosDisponibles, setNichosDisponibles] = useState(0);
   const [porcentajeOcupacion, setPorcentajeOcupacion] = useState(0);
-  const [ultimosIngresos, setUltimosIngresos] = useState<CuerpoInhumado[]>([]);
   const [search, setSearch] = useState("");
   const [filteredBodies, setFilteredBodies] = useState<CuerpoInhumado[]>([]);
   const [selectedBody, setSelectedBody] = useState<CuerpoInhumado | null>(null);
@@ -38,8 +35,6 @@ function Dashboard() {
       // Obtener cantidad de cuerpos
       const cuerpos = await getAllBodies();
       setTotalCuerpos(cuerpos.length);
-
-      fetchUltimosIngresos();
 
       const nichos = await getAllNichos();
       setTotalNichos(nichos.length);   
@@ -63,15 +58,6 @@ function Dashboard() {
       Swal.fire("Error", `No se pudieron cargar las estadísticas: ${errorMessage}`, "error");
     }
   };
-
-  const fetchUltimosIngresos = async () => {
-    try {
-      const cuerpos = await getLastBodiesIngress(5);
-      setUltimosIngresos(cuerpos);
-    } catch (error) {
-      console.error("Error al cargar el último ingreso:", error);
-    }
-  }
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
@@ -127,127 +113,82 @@ function Dashboard() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full space-y-4">
-      <Header />
-      <div className='bg-gray-100 px-4'>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-1">
-          <Card className="overflow-hidden border-l-4 border-l-blue-500">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
-                <Boxes className="mr-2 h-4 w-4 text-blue-500" />
-                Cuerpos Registrados
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-start items-center">
-                <div>
-                  <div className="text-2xl font-bold">{totalCuerpos}</div>
-                  <p className="text-xs text-gray-500">Total en el sistema</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden border-l-4 border-l-green-500">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
-                <CircleOff className="mr-2 h-4 w-4 text-green-500" />
-                Nichos Disponibles
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="text-2xl font-bold">{nichosDisponibles}</div>
-                  <p className="text-xs text-gray-500">De {totalNichos} totales</p>
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <span className="text-xs mr-1">Disponibilidad</span>
-                  <span className={`font-medium ${getOccupancyColorClass(100 - porcentajeOcupacion)}`}>
-                    {100 - porcentajeOcupacion}%
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden border-l-4 border-l-amber-500">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
-                <LayoutDashboard className="mr-2 h-4 w-4 text-amber-500" />
-                Ocupación
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <div className="text-2xl font-bold">{porcentajeOcupacion}%</div>
-                  <div className={getOccupancyColorClass(porcentajeOcupacion)}>
-                    {porcentajeOcupacion >= 90 ? 'Crítico' : 
-                      porcentajeOcupacion >= 70 ? 'Moderado' : 'Óptimo'}
-                  </div>
-                </div>
-                <Progress 
-                  value={porcentajeOcupacion} 
-                  className="h-2"
-                />
-              </div>
-            </CardContent>
-          </Card>
+    <div className="flex flex-col h-full space-y-3">
+      <div className='bg-gray-100 px-4 mt-5'>
+        <div className='w-full h-96 bg-gray-600 flex items-center py-2 justify-between px-4 rounded-lg shadow-md'>
+          <div className='flex flex-col space-y-2'>
+            <h1 className='text-3xl text-white font-bold'>Imagenes</h1>
+            <p className='text-sm text-gray-200'>Bienvenido al sistema de gestión de cementerios.</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-2 flex-1">
-          {/* Entradas Recientes */}
-          <Card className="lg:col-span-5 overflow-hidden">
-            <CardHeader className="bg-gray-50 border-b">
-              <div className="justify-between items-center">
-                <CardTitle className="text-lg font-semibold">Ingresos Recientes</CardTitle>
-                <p className="text-sm text-gray-500">Últimos 5 cuerpos ingresados al sistema</p>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              {ultimosIngresos.length > 0 ? (
-                <div className="divide-y">
-                  {ultimosIngresos.map((cuerpo, index) => (
-                    <div key={index} className="p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium text-gray-900">{cuerpo.nombre} {cuerpo.apellido}</h4>
-                          <div className="flex items-center text-sm text-gray-500 mt-1">
-                            <span className="mr-2">ID: {cuerpo.documentoIdentidad}</span>
-                            <Badge variant="outline" className="bg-purple-100 text-purple-800">
-                              {cuerpo.causaMuerte}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">
-                            {formatDate(cuerpo.fechaInhumacion)}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Fecha Ingreso
-                          </div>
-                        </div>
-                      </div>
+        <div className="grid grid-cols-12 gap-2 flex-1 p-2 pt-5">
+          <div className="col-span-5 flex flex-col space-y-2">
+
+            <Card className="overflow-hidden w-3/4 border-l-4 border-l-blue-500">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
+                  <Boxes className="mr-2 h-4 w-4 text-blue-500" />
+                  Cuerpos Registrados
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-start items-center">
+                  <div>
+                    <div className="text-2xl font-bold">{totalCuerpos}</div>
+                    <p className="text-xs text-gray-500">Total en el sistema</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden w-3/4 border-l-4 border-l-green-500">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
+                  <CircleOff className="mr-2 h-4 w-4 text-green-500" />
+                  Nichos Disponibles
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-2xl font-bold">{nichosDisponibles}</div>
+                    <p className="text-xs text-gray-500">De {totalNichos} totales</p>
+                  </div>
+                  <div className="flex items-center text-gray-600">
+                    <span className="text-xs mr-1">Disponibilidad</span>
+                    <span className={`font-medium ${getOccupancyColorClass(100 - porcentajeOcupacion)}`}>
+                      {100 - porcentajeOcupacion}%
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden w-3/4 border-l-4 border-l-amber-500">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
+                  <LayoutDashboard className="mr-2 h-4 w-4 text-amber-500" />
+                  Ocupación
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="text-2xl font-bold">{porcentajeOcupacion}%</div>
+                    <div className={getOccupancyColorClass(porcentajeOcupacion)}>
+                      {porcentajeOcupacion >= 90 ? 'Crítico' : 
+                        porcentajeOcupacion >= 70 ? 'Moderado' : 'Óptimo'}
                     </div>
-                  ))}
+                  </div>
+                  <Progress 
+                    value={porcentajeOcupacion} 
+                    className="h-2"
+                  />
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                  <Boxes className="h-12 w-12 mb-4 text-gray-300" />
-                  <p>No hay registros recientes</p>
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="bg-gray-50 border-t p-3">
-              <Link
-                to="/bodies"
-                className="block w-full bg-slate-800 hover:bg-slate-500 text-white hover:text-gray-800 text-center text-lg py-1 rounded-lg mt-5 transition-colors"
-              >
-                Ver Todos los Registros
-              </Link>
-            </CardFooter>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Buscador de Cuerpos Inhumados */}
           <Card className="col-span-7 flex flex-col">
