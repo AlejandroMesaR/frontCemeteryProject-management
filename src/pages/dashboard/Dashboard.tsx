@@ -125,7 +125,7 @@ function Dashboard() {
         <div className="grid grid-cols-12 gap-2 flex-1 p-2 pt-5">
           <div className="col-span-5 flex flex-col space-y-2">
 
-            <Card className="overflow-hidden w-3/4 border-l-4 border-l-blue-500">
+            <Card className="overflow-hidden w-3/4 border-l-4 border-l-blue-500" data-testid="cuerpos-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
                   <Boxes className="mr-2 h-4 w-4 text-blue-500" />
@@ -142,7 +142,7 @@ function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="overflow-hidden w-3/4 border-l-4 border-l-green-500">
+            <Card className="overflow-hidden w-3/4 border-l-4 border-l-green-500" data-testid="nichos-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
                   <CircleOff className="mr-2 h-4 w-4 text-green-500" />
@@ -165,7 +165,7 @@ function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="overflow-hidden w-3/4 border-l-4 border-l-amber-500">
+            <Card className="overflow-hidden w-3/4 border-l-4 border-l-amber-500" data-testid="ocupacion-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
                   <LayoutDashboard className="mr-2 h-4 w-4 text-amber-500" />
@@ -309,7 +309,7 @@ function Dashboard() {
                       <div className="text-gray-500 italic">
                         Este cuerpo no está asignado a un nicho.
                       </div>
-                    ):(
+                    ):( 
                       <div className="text-gray-500 italic">
                         Cargando información del nicho...
                       </div>

@@ -8,6 +8,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["vite/client", "vitest"],
+    "include": ["src/**/*", "src/setupTests.ts"],
+    "exclude": ["node_modules"]
   }
 }
