@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaFileExport, FaSearch, FaFilter } from "react-icons/fa";
+import { FaSearch, FaFilter } from "react-icons/fa";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"; 
 import Button  from "../../components/utilsComponents/Button"; 
 import { Input } from "../../components/utilsComponents/Input"; 
@@ -136,8 +136,8 @@ const handleViewDetails = (id: string) => {
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-semibold">Body Admissions</h2>
-      <p className="text-gray-500">Records of recent body admissions to the sanctuary</p>
+      <h2 className="text-2xl font-semibold">Admisiones del cuerpo</h2>
+      <p className="text-gray-500">Registros de ingresos recientes de cuerpos al cementerio</p>
 
       {/* Search and Filters */}
       <div className="flex justify-between items-center mt-4">
@@ -174,10 +174,10 @@ const handleViewDetails = (id: string) => {
         </Button>
 
 
-          <Button className="flex items-center space-x-2 bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500">
+          {/* <Button className="flex items-center space-x-2 bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500">
             <FaFileExport />
             <span>Export</span>
-          </Button>
+          </Button> */}
         </div>
       </div>
 
