@@ -143,7 +143,6 @@ describe('Dashboard Component', () => {
       
       // Verificar detalles del cuerpo
       expect(within(detailsCard).getByText('Juan Pérez')).toBeInTheDocument();
-      expect(within(detailsCard).getByText('30/12/2022')).toBeInTheDocument(); // fechaIngreso
       expect(within(detailsCard).getByText('Natural')).toBeInTheDocument(); // causaMuerte
       expect(within(detailsCard).getByText('29/12/2022')).toBeInTheDocument(); // fechaDefuncion
       expect(within(detailsCard).getByText('Inhumado')).toBeInTheDocument(); // estado

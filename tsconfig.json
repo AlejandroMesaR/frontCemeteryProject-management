@@ -7,10 +7,15 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
     },
-    "types": ["vite/client", "vitest"],
-    "include": ["src/**/*", "src/setupTests.ts"],
-    "exclude": ["node_modules"]
+    "target": "ESNext",
+    "module": "ESNext",
+    "strict": true,
+    "jsx": "preserve",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "types": ["vitest/globals", "@testing-library/jest-dom, vitest"],
+    "skipLibCheck": true // Optional: Speeds up compilation by skipping library checks
   }
 }

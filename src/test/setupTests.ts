@@ -1,13 +1,18 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
-// import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 import { expect } from 'vitest';
 import '@testing-library/jest-dom';
+import { afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
 
 
 // Add testing-library matchers to vitest's expect
 expect.extend(matchers);
+
+afterEach(() => {
+  cleanup();
+});
 
 // Mock matchMedia which is needed for shadcn/ui components
 window.matchMedia = vi.fn().mockImplementation((query) => ({
@@ -28,8 +33,3 @@ vi.mock('*.css', () => ({}));
 vi.mock('window.fs', () => ({
   readFile: vi.fn()
 }));
-
-// Reset all mocks after each test
-// afterEach(() => {
-//   cleanup();
-// });

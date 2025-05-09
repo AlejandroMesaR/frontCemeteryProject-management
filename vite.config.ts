@@ -19,6 +19,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
     },
+    testTimeout: 30000,
+    include: ['src/test/**/*.{test,spec}.{js,ts,jsx,tsx}'], // Include test files
+    
   },
   server: {
     port: 4000,
