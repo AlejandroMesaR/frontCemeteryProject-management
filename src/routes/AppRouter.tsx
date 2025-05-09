@@ -79,7 +79,7 @@ function AppRouter() {
               </PrivateRoute>
             }
           >
-            <Route index element={<GeneralSettings />} />
+            <Route index element={<UsersManagment />} />
             <Route path="general" element={<GeneralSettings />} />
             <Route path="users" element={<UsersManagment />} />
           </Route>
