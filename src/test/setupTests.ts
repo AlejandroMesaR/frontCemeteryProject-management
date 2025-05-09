@@ -20,6 +20,11 @@ window.matchMedia = vi.fn().mockImplementation((query) => ({
   dispatchEvent: vi.fn(),
 }));
 
+vi.stubGlobal('URL', {
+  createObjectURL: vi.fn().mockReturnValue('blob:http://localhost/mock-blob'),
+  revokeObjectURL: vi.fn(),
+});
+
 // Mock CSS modules and style imports
 vi.mock('*.css', () => ({}));
 

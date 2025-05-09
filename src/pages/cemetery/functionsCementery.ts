@@ -47,8 +47,6 @@ export const sortNichosByNumber = (nichos: Nicho[]): Nicho[] => {
 
     return numA.localeCompare(numB, undefined, { numeric: true });
   });
-
-  console.log
 };
 
 export const formatDate = (dateString: string | Date | null | undefined) => {
