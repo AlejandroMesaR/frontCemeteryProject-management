@@ -1,20 +1,20 @@
 /// <reference types="vitest/globals" />
 import { defineConfig } from 'vite'
-import path from "path"
+import path from 'path'
 import react from '@vitejs/plugin-react-swc'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': path.resolve(__dirname, './src'),
     },
   },
   test: {
-    environment: 'jsdom', // Necesario para pruebas de React
-    setupFiles: './src/test/setupTests.ts', // Archivo para configuraciones globales
-    globals: true, // Habilita globals como describe, it, expect
+    environment: 'jsdom',
+    setupFiles: './src/test/setupTests.ts',
+    include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
+    globals: true, // Necesario para que 'expect' esté disponible globalmente
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -25,5 +25,5 @@ export default defineConfig({
   },
   server: {
     port: 4000,
-  }
+  },
 })
