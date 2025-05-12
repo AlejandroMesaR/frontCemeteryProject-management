@@ -1,27 +1,27 @@
 import { useEffect, useState } from "react";
-import { FaSearch, FaFilter } from "react-icons/fa";
+import { FaFileExport, FaSearch, FaFilter } from "react-icons/fa";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"; 
-import Button  from "../../components/utilsComponents/Button"; 
+import Button from "../../components/utilsComponents/Button"; 
 import { Input } from "../../components/utilsComponents/Input"; 
 import { getAllBodies, deleteBodyById, createBody } from "../../services/managementService"; 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
 import { CuerpoInhumado, MappedBody } from "../../models/CuerpoInhumado"; 
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
-
+import { getUserId, isAuthenticated } from "../../utils/auth";
 
 const BodiesRegister = () => {
-
   const [bodiesData, setBodiesData] = useState<MappedBody[]>([]);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("All");
+  const [isGenerating, setIsGenerating] = useState(false); // Estado para controlar el mensaje de carga
 
-  //ver
+  // Ver
   const [allBodies, setAllBodies] = useState<CuerpoInhumado[]>([]);
   const [selectedBody, setSelectedBody] = useState<CuerpoInhumado | null>(null);
   const [showModal, setShowModal] = useState(false);
   
-    useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       const data: CuerpoInhumado[] = await getAllBodies();
       setAllBodies(data); 
@@ -33,7 +33,6 @@ const BodiesRegister = () => {
         state: item.estado,
         document: item.documentoIdentidad,
         description: item.observaciones || "Sin observaciones",
-       
       }));
       setBodiesData(mappedData);
     };
@@ -56,8 +55,7 @@ const BodiesRegister = () => {
     );
   });
 
-  //Inicio Logica de la paginacion
-
+  // Inicio Lógica de la paginación
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
@@ -65,74 +63,129 @@ const BodiesRegister = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentItems = filteredData.slice(startIndex, endIndex);
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  // Fin lógica Paginación
 
-  //Fin logica Pginacion
+  // Alerta de eliminar
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará el cuerpo de manera permanente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        confirmButton: 'bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded mr-2',
+        cancelButton: 'bg-gray-300 text-black hover:bg-gray-400 px-4 py-2 rounded'
+      },
+      buttonsStyling: false 
+    });
 
+    if (result.isConfirmed) {
+      try {
+        await deleteBodyById(id);
+        Swal.fire('Eliminado', 'El cuerpo ha sido eliminado exitosamente.', 'success');
+        setBodiesData((prev) => prev.filter((item) => item.id !== id));
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        Swal.fire('Error', `Ocurrió un error al eliminar: ${errorMessage}`, 'error');
+      }
+    }
+  };
+  // Fin alerta de eliminar
 
-  //Alerta de eliminar
-
-const handleDelete = async (id: string) => {
-  const result = await Swal.fire({
-    title: '¿Estás seguro?',
-    text: 'Esta acción eliminará el cuerpo de manera permanente.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar',
-    customClass: {
-      confirmButton: 'bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded mr-2',
-      cancelButton: 'bg-gray-300 text-black hover:bg-gray-400 px-4 py-2 rounded'
-    },
-    buttonsStyling: false 
+  // Alerta de creación de cuerpo
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [newBodyData, setNewBodyData] = useState<Omit<CuerpoInhumado, "idCadaver">>({
+    nombre: "",
+    apellido: "",
+    documentoIdentidad: "",
+    numeroProtocoloNecropsia: "",
+    causaMuerte: "",
+    fechaNacimiento: "",
+    fechaDefuncion: new Date(),
+    fechaIngreso: "",
+    fechaInhumacion: "",
+    fechaExhumacion: "",
+    funcionarioReceptor: "",
+    cargoFuncionario: "",
+    autoridadRemitente: "",
+    cargoAutoridadRemitente: "",
+    autoridadExhumacion: "",
+    cargoAutoridadExhumacion: "",
+    estado: "",
+    observaciones: "",
   });
 
-  if (result.isConfirmed) {
-    try {
-      await deleteBodyById(id);
-      Swal.fire('Eliminado', 'El cuerpo ha sido eliminado exitosamente.', 'success');
-      setBodiesData((prev) => prev.filter((item) => item.id !== id));
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      Swal.fire('Error', 'Ocurrió un error al eliminar.', 'error');
+  // Ver
+  const handleViewDetails = (id: string) => {
+    const fullBody = allBodies.find((body) => body.idCadaver === id);
+    if (fullBody) {
+      setSelectedBody(fullBody);
+      setShowModal(true);
     }
-  }
-};
+  };
 
-//Fin alerta de eliminar
+  // Función para exportar la lista de cuerpos como PDF
+  const handleExport = async () => {
+    if (!isAuthenticated()) {
+      Swal.fire('Error', 'No estás autenticado. Por favor, inicia sesión.', 'error');
+      return;
+    }
 
-// Alerta de creacion de cuerpo
-const [showRegisterModal, setShowRegisterModal] = useState(false);
-const [newBodyData, setNewBodyData] = useState<Omit<CuerpoInhumado, "idCadaver">>({
-  nombre: "",
-  apellido: "",
-  documentoIdentidad: "",
-  numeroProtocoloNecropsia: "",
-  causaMuerte: "",
-  fechaNacimiento: "",
-  fechaDefuncion: new Date(),
-  fechaIngreso: "",
-  fechaInhumacion: "",
-  fechaExhumacion: "",
-  funcionarioReceptor: "",
-  cargoFuncionario: "",
-  autoridadRemitente: "",
-  cargoAutoridadRemitente: "",
-  autoridadExhumacion: "",
-  cargoAutoridadExhumacion: "",
-  estado: "",
-  observaciones: "",
-});
+    const userId = getUserId();
+    if (!userId) {
+      Swal.fire('Error', 'No se pudo obtener el ID del usuario. Por favor, inicia sesión nuevamente.', 'error');
+      return;
+    }
 
+    setIsGenerating(true); // Mostrar el mensaje de carga
 
-//Ver
-const handleViewDetails = (id: string) => {
-  const fullBody = allBodies.find((body) => body.idCadaver === id);
-  if (fullBody) {
-    setSelectedBody(fullBody);
-    setShowModal(true);
-  }
-};
+    try {
+      const response = await fetch(`http://localhost:8083/reportes/descargar-cuerpos?usuarioId=${userId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/pdf",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
+      if (!response.ok) {
+        const errorText = await response.text(); // Intentar obtener el mensaje de error del backend
+        throw new Error(errorText || 'Error al exportar la lista de cuerpos');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "lista-cuerpos.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      // Refrescar la lista de cuerpos después de la exportación
+      const data: CuerpoInhumado[] = await getAllBodies();
+      const mappedData: MappedBody[] = data.map((item) => ({
+        id: item.idCadaver,
+        name: `${item.nombre} ${item.apellido}`,
+        date: item.fechaIngreso,
+        state: item.estado,
+        document: item.documentoIdentidad,
+        description: item.observaciones || "Sin observaciones",
+      }));
+      setBodiesData(mappedData);
+
+      Swal.fire('Éxito', 'La lista de cuerpos ha sido exportada exitosamente.', 'success');
+      setIsGenerating(false); // Ocultar el mensaje de carga después del pop-up
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error('Error al exportar la lista de cuerpos:', error);
+      Swal.fire('Error', `Ocurrió un error al exportar la lista: ${errorMessage}`, 'error');
+      setIsGenerating(false); // Ocultar el mensaje de carga después del pop-up
+    }
+  };
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
@@ -165,19 +218,25 @@ const handleViewDetails = (id: string) => {
             <DropdownMenuItem onClick={() => setFilterType("EXHUMADO")}>Exhumado</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <div className="flex items-center space-x-2">
-        <Button 
-          className="flex items-center bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500"
-          onClick={() => setShowRegisterModal(true)}
-        >
-          <span>Registrar Cuerpo</span>
-        </Button>
-
-
-          {/* <Button className="flex items-center space-x-2 bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500">
-            <FaFileExport />
-            <span>Export</span>
-          </Button> */}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center space-x-2">
+            <Button 
+              className="flex items-center bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500"
+              onClick={() => setShowRegisterModal(true)}
+            >
+              <span>Registrar Cuerpo</span>
+            </Button>
+            <Button 
+              className="flex items-center space-x-2 bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500"
+              onClick={handleExport}
+            >
+              <FaFileExport />
+              <span>Exportar</span>
+            </Button>
+          </div>
+          {isGenerating && (
+            <p className="text-sm text-gray-500">El archivo se está generando...</p>
+          )}
         </div>
       </div>
 
@@ -212,14 +271,14 @@ const handleViewDetails = (id: string) => {
                 <TableCell>{item.description}</TableCell> 
                 <TableCell>
                   <Button 
-                    className="bg-blue-600 ho  hover:underline hover:bg-blue-400 transition mr-1"
+                    className="bg-blue-600 ho hover:underline hover:bg-blue-400 transition mr-1"
                     onClick={() => handleViewDetails(item.id)}
-                    >Ver</Button>
-                  <Button className="bg-yellow-600 hover:underline mr-1 hover:bg-yellow-400 transition ">Editar</Button>
+                  >Ver</Button>
+                  <Button className="bg-yellow-600 hover:underline mr-1 hover:bg-yellow-400 transition">Editar</Button>
                   <Button
-                    className="bg-red-600 text-white hover:underline hover:bg-red-400 transition "
-                    onClick={() => handleDelete(item.id)}>Eliminar
-                  </Button>
+                    className="bg-red-600 text-white hover:underline hover:bg-red-400 transition"
+                    onClick={() => handleDelete(item.id)}
+                  >Eliminar</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -259,7 +318,7 @@ const handleViewDetails = (id: string) => {
       {showModal && selectedBody && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-8 text-center  ">Detalles del Cuerpo</h3>
+            <h3 className="text-xl font-semibold mb-8 text-center">Detalles del Cuerpo</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <p><strong>Nombre:</strong> {selectedBody.nombre} {selectedBody.apellido}</p>
               <p><strong>Documento:</strong> {selectedBody.documentoIdentidad}</p>
@@ -289,87 +348,88 @@ const handleViewDetails = (id: string) => {
       )}
       {showRegisterModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-          <h3 className="text-xl font-semibold mb-4 text-center">Registrar Nuevo Cuerpo</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            {Object.entries(newBodyData).map(([key, value]) => (
-              key !== "estado" ? ( // todos los campos menos estado
-                <div key={key} className="flex flex-col">
-                  <label className="text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
-                  <input
-                    type={key.includes("fechaIngreso") ? "datetime-local" :
-                          key.includes("fecha") ? "date" : "text"}
-                    value={
-                      key.includes("fechaIngreso")
-                        ? (value ? (value as string).slice(0, 16) : "")
-                        : key.includes("fecha")
-                          ? (value ? new Date(value).toISOString().split('T')[0] : "")
-                          : (value as string)
-                    }
-                    onChange={(e) => {
-                      const newValue = e.target.value;
-                      setNewBodyData((prev) => ({
-                        ...prev,
-                        [key]: newValue
-                      }));
-                    }}
-                    className="border p-2 rounded"
-                  />
-                </div>
-              ) : null
-            ))}
-            {/* Campo especial estado */}
-            <div className="flex flex-col">
-              <label className="text-gray-700">Estado</label>
-              <select
-                value={newBodyData.estado}
-                onChange={(e) => setNewBodyData((prev) => ({
-                  ...prev,
-                  estado: e.target.value
-                }))}
-                className="border p-2 rounded"
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-semibold mb-4 text-center">Registrar Nuevo Cuerpo</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {Object.entries(newBodyData).map(([key, value]) => (
+                key !== "estado" ? ( // todos los campos menos estado
+                  <div key={key} className="flex flex-col">
+                    <label className="text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
+                    <input
+                      type={key.includes("fechaIngreso") ? "datetime-local" :
+                            key.includes("fecha") ? "date" : "text"}
+                      value={
+                        key.includes("fechaIngreso")
+                          ? (value ? (value as string).slice(0, 16) : "")
+                          : key.includes("fecha")
+                            ? (value ? new Date(value).toISOString().split('T')[0] : "")
+                            : (value as string)
+                      }
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setNewBodyData((prev) => ({
+                          ...prev,
+                          [key]: newValue
+                        }));
+                      }}
+                      className="border p-2 rounded"
+                    />
+                  </div>
+                ) : null
+              ))}
+              {/* Campo especial estado */}
+              <div className="flex flex-col">
+                <label className="text-gray-700">Estado</label>
+                <select
+                  value={newBodyData.estado}
+                  onChange={(e) => setNewBodyData((prev) => ({
+                    ...prev,
+                    estado: e.target.value
+                  }))}
+                  className="border p-2 rounded"
+                >
+                  <option value="">Seleccione estado</option>
+                  <option value="INHUMADO">Inhumado</option>
+                  <option value="EXHUMADO">Exhumado</option>
+                </select>
+              </div>
+            </div>
+      
+            <div className="flex justify-end gap-4 mt-6">
+              <Button
+                className="bg-gray-400 text-black px-4 py-2 rounded hover:bg-gray-500"
+                onClick={() => setShowRegisterModal(false)}
               >
-                <option value="">Seleccione estado</option>
-                <option value="INHUMADO">Inhumado</option>
-                <option value="EXHUMADO">Exhumado</option>
-              </select>
+                Cancelar
+              </Button>
+              <Button
+                className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-500"
+                onClick={async () => {
+                  try {
+                    const bodyToSend = {
+                      ...newBodyData,
+                      fechaIngreso: newBodyData.fechaIngreso
+                        ? newBodyData.fechaIngreso + ":00"
+                        : "", // agregar segundos para datetime-local
+                    };
+                    await createBody(bodyToSend);
+                    Swal.fire('Éxito', 'El cuerpo fue registrado exitosamente.', 'success');
+                    setShowRegisterModal(false);
+                    window.location.reload(); 
+                  } catch (error: unknown) {
+                    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+                    Swal.fire('Error', `Ocurrió un error al registrar el cuerpo: ${errorMessage}`, 'error');
+                  }
+                }}
+              >
+                Registrar
+              </Button>
             </div>
           </div>
-    
-          <div className="flex justify-end gap-4 mt-6">
-            <Button
-              className="bg-gray-400 text-black px-4 py-2 rounded hover:bg-gray-500"
-              onClick={() => setShowRegisterModal(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-500"
-              onClick={async () => {
-                try {
-                  const bodyToSend = {
-                    ...newBodyData,
-                    fechaIngreso: newBodyData.fechaIngreso
-                      ? newBodyData.fechaIngreso + ":00"
-                      : "", // agregar segundos para datetime-local
-                  };
-                  await createBody(bodyToSend);
-                  Swal.fire('Éxito', 'El cuerpo fue registrado exitosamente.', 'success');
-                  setShowRegisterModal(false);
-                  window.location.reload(); 
-                } catch (error) {
-                  Swal.fire('Error', 'Ocurrió un error al registrar el cuerpo.', 'error');
-                }
-              }}
-            >
-              Registrar
-            </Button>
-          </div>
         </div>
-      </div>
-    )}
-
+      )}
     </div>
-);
+  );
 }
+
 export default BodiesRegister;
