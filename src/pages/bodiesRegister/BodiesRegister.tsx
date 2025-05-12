@@ -59,7 +59,7 @@ const BodiesRegister = () => {
   //Inicio Logica de la paginacion
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 2;
+  const itemsPerPage = 6;
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
