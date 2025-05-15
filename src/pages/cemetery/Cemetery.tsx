@@ -251,7 +251,7 @@ const CemeteryMap = () => {
           </div>
           
           <AssignNichoDialog
-            trigger={<Button className="w-full bg-sky-950 hover:bg-sky-700 text-white">Asignar Nicho</Button>}
+            trigger={<Button className="w-full bg-gray-700 hover:bg-gray-800 text-white">Asignar Nicho</Button>}
             onAssigned={popupSuccess}
           />
         </Card>

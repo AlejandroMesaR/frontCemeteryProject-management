@@ -8,13 +8,12 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
-
+import { FaEdit } from "react-icons/fa";
 import { useState } from "react";
 import { Input } from "../utilsComponents/Input";
 import  {Button } from "../ui/button";
 import { updateUser } from "@/services/authService";
 import { User } from "@/models/User";
-import ButtonP from "../utilsComponents/Button";
 
 type ToastType = 'success' | 'error';
 
@@ -24,6 +23,8 @@ interface EditUserDialogProps {
 }
 
 export default function EditUserDialog({ user, onComplete }: EditUserDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: user.username,
     email: user.email,
@@ -36,18 +37,22 @@ export default function EditUserDialog({ user, onComplete }: EditUserDialogProps
   };
 
   const handleUpdate = async () => {
+    setLoading(true);
     try {
       await updateUser(user.id, formData);
       onComplete(`Usuario ${formData.username} actualizado correctamente`, 'success');
     } catch (error) {
       onComplete("Error al actualizar usuario", 'error');
+    } finally {
+      setLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <ButtonP className="bg-green-800 p-0">Editar</ButtonP>
+        <Button variant="destructive" className="bg-green-800 hover:bg-green-900" size="icon"><FaEdit/></Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -68,11 +73,9 @@ export default function EditUserDialog({ user, onComplete }: EditUserDialogProps
           <DialogClose asChild>
             <Button variant="outline">Cancelar</Button>
           </DialogClose>
-          <DialogClose asChild>
-            <Button className="bg-green-800" onClick={handleUpdate}>
-              Guardar
-            </Button>
-          </DialogClose>
+          <Button className="bg-green-800" onClick={handleUpdate}>
+            {loading ? "Guardando..." : "Guardar"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

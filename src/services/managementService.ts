@@ -2,6 +2,7 @@ import { NichoCuerpoCreate } from '@/models/NichoCuerpo';
 import {apiManagement} from '../api/axios';
 import { CuerpoInhumado } from "../models/CuerpoInhumado";
 import { Nicho } from "../models/Nicho";
+import { EventoCuerpo } from '../models/EventoCuerpo';
 
 
 export const getAllBodies = async () => {
@@ -25,16 +26,25 @@ export const deleteBodyById = async (idCadaver: string) => {
   }
 };
 
-  export const createBody = async (nuevoCuerpo: Omit<CuerpoInhumado, "idCadaver">) => {
-    try {
-      const response = await apiManagement.post('/cuerposinhumados', nuevoCuerpo);
-      return response.data;
-    } catch (error) {
-      console.error("Error al crear el cuerpo:", error);
-      throw error;
-    }
-  };
-  
+export const createBody = async (nuevoCuerpo: Omit<CuerpoInhumado, "idCadaver">) => {
+  try {
+    const response = await apiManagement.post('/cuerposinhumados', nuevoCuerpo);
+    return response.data;
+  } catch (error) {
+    console.error("Error al crear el cuerpo:", error);
+    throw error;
+  }
+};
+
+export const updateBody = async (idCadaver: string, updatedData: Partial<CuerpoInhumado>) => {
+  try {
+    const response = await apiManagement.put(`/cuerposinhumados/${idCadaver}`, updatedData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al actualizar el cuerpo con id ${idCadaver}:`, error);
+    throw error;
+  }
+}
 
 export const getAllNichos = async () => {
   try {
@@ -185,4 +195,90 @@ export const getNichoByIdCuerpo = async (idCuerpo: string): Promise<Nicho | null
     throw error;
   }
 };
+
+/**
+ * Gets all events for a specific body by its ID
+ * @param idCadaver The body ID
+ * @returns Array of EventoCuerpo objects
+ */
+export const getEventsByBodyId = async (idCadaver: string): Promise<EventoCuerpo[]> => {
+  try {
+    const response = await apiManagement.get(`/eventoscuerpos/cuerpo/${idCadaver}`);
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      `Error al obtener los eventos del cuerpo (status ${error.response?.status})`;
+    throw new Error(message);
+  }
+};
+
+/**
+ * Creates a new event for a specific body
+ * @param eventData The event data
+ * @returns The created EventoCuerpo object
+ */
+export const createEvent = async (eventData: Omit<EventoCuerpo, "id">): Promise<EventoCuerpo> => {
+  try {
+    const response = await apiManagement.post('/eventoscuerpos', eventData);
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      `Error al crear el evento (status ${error.response?.status})`;
+    throw new Error(message);
+  }
+};
+
+/**
+ * Updates an existing event
+ * @param id The event ID
+ * @param eventData The updated event data
+ * @returns The updated EventoCuerpo object
+ */
+export const updateEvent = async (id: string, eventData: Partial<EventoCuerpo>): Promise<EventoCuerpo> => {
+  try {
+    const response = await apiManagement.put(`/eventoscuerpos/${id}`, eventData);
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      `Error al actualizar el evento (status ${error.response?.status})`;
+    throw new Error(message);
+  }
+};
+
+/**
+ * Deletes an event by its ID
+ * @param id The event ID
+ * @returns True if deletion was successful
+ */
+export const deleteEvent = async (id: string): Promise<boolean> => {
+  try {
+    const response = await apiManagement.delete(`/eventoscuerpos/${id}`);
+    return response.status === 204;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      `Error al eliminar el evento (status ${error.response?.status})`;
+    throw new Error(message);
+  }
+};
+
+/**
+ * Gets a body by its ID
+ * @param idCadaver The body ID
+ * @returns The CuerpoInhumado object
+ */
+export const getBodyById = async (idCadaver: string): Promise<CuerpoInhumado> => {
+  try {
+    const response = await apiManagement.get(`/cuerposinhumados/${idCadaver}`);
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      `Error al obtener el cuerpo por ID (status ${error.response?.status})`;
+    throw new Error(message);
+  }
+}
   

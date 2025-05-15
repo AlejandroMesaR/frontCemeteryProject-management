@@ -16,6 +16,7 @@ import DigitalizedDocumentsPage from '../pages/documents/DigitalizedDocumentsPag
 import PrivateRoute from './PrivateRoute';
 import UnauthorizedPage from '../pages/login/UnauthorizedPage';
 import LoginPage from '../pages/login/LoginPage';
+import BodyEvents from '../pages/bodiesRegister/BodyEvents';
 
 
 function AppRouter() {
@@ -38,6 +39,15 @@ function AppRouter() {
             }
           />
 
+          <Route
+            path='/bodies/events/:idCadaver'
+            element={ 
+              <PrivateRoute allowedRoles={["ROLE_ADMIN", "ROLE_USER"]}>
+                <BodyEvents />
+              </PrivateRoute>
+            }
+          />
+          
           <Route
             path="/map"
             element={
