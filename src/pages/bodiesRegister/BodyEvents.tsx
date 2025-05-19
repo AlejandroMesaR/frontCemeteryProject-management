@@ -15,9 +15,10 @@ import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { isAuthenticated } from "../../utils/auth";
 import { getEventsByBodyId, deleteEvent, getBodyById  } from "../../services/managementService";
-import EventDetailsDialog from "../../components/dialog/EventDetailsDialog";
 import EditEventDialog from "../../components/dialog/EditEventDialogProps";
 import CreateEventDialog from "../../components/dialog/CreateEventDialogProps";
+import EventDetailsDialog from "@/components/dialog/EventDetailsDialog";
+import CloudinaryFileHandler from "../../components/dialog/CloudinaryFileHandler";
 import { EventoCuerpo, CuerpoInhumado } from "../../models";
 
 const BodyEvents = () => {
@@ -110,8 +111,13 @@ const BodyEvents = () => {
       }
   };
 
-  const handleCreate = (newEvent: EventoCuerpo) => {
-    setEvents([...events, newEvent]);
+  const handleCreate = async (message: string, type: string) => {
+    await Swal.fire({
+      title: type === 'success' ? 'Creación Exitosa' : 'Error en la Creación',
+      text: message,
+      icon: type === 'success' ? 'success' : 'error',
+      confirmButtonText: 'Ok'
+    });
   };
 
   return (
@@ -163,7 +169,10 @@ const BodyEvents = () => {
               Registrar Evento
             </Button>
           }
-          onCreate={handleCreate}
+          onCreate={(message, type) => {
+              handleCreate(message, type);
+              fetchData();
+            }}
         />
       </div>
 
@@ -195,14 +204,7 @@ const BodyEvents = () => {
                   <TableCell>{event.resumenEvento}</TableCell>
                   <TableCell>
                     {event.archivo ? (
-                      <a
-                        href={event.archivo}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        Ver archivo
-                      </a>
+                      <CloudinaryFileHandler fileUrl={event.archivo} />
                     ) : (
                       "Sin archivo"
                     )}

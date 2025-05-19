@@ -4,5 +4,5 @@ export interface EventoCuerpo {
   fechaEvento: string;
   tipoEvento: string;
   resumenEvento: string;
-  archivo: string;
+  archivo: string | null; // Changed from File to string | null to match the backend URL
 }

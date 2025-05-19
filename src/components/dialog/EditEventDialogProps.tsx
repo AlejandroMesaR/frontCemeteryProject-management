@@ -29,7 +29,7 @@ export default function EditEventDialog({ event, onUpdate }: EditEventDialogProp
     fechaEvento: event.fechaEvento,
     tipoEvento: event.tipoEvento,
     resumenEvento: event.resumenEvento,
-    archivo: event.archivo
+    archivo: null as File | null,
   });
 
   // Función para formatear la fecha para el input datetime-local
@@ -67,8 +67,13 @@ export default function EditEventDialog({ event, onUpdate }: EditEventDialogProp
   }, [event.fechaEvento]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, files } = e.target;
+    console.log("Input changed:", name, value, files);
+    if (name === "archivo" && files) {
+      setFormData((prev) => ({ ...prev, archivo: files[0] }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleUpdate = async () => {
@@ -139,15 +144,14 @@ export default function EditEventDialog({ event, onUpdate }: EditEventDialogProp
             />
           </div>
           <div className="flex flex-col col-span-2">
-            <label className="text-gray-700" htmlFor="archivo">Archivo (URL)</label>
-            <Input
-              id="archivo"
-              name="archivo"
-              type="text"
-              value={formData.archivo}
-              onChange={handleChange}
-              className="border p-2 rounded"
-            />
+              <label className="text-gray-700">Archivo PDF *</label>
+              <Input
+                type="file"
+                name="archivo"
+                accept="application/pdf"
+                onChange={handleChange}
+                className="border p-2 rounded"
+              />
           </div>
         </div>
         <DialogFooter className="flex justify-end space-x-4 mt-6">

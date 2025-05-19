@@ -11,6 +11,7 @@ import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { getUserId, isAuthenticated } from "../../utils/auth";
 import EditBodyDialog from "../../components/dialog/EditBodyDialogProps";
+import CreateBodyDialog from "@/components/dialog/CreateBodyDialogProps";
 
 const BodiesRegister = () => {
   const [bodiesData, setBodiesData] = useState<MappedBody[]>([]);
@@ -92,6 +93,15 @@ const BodiesRegister = () => {
   const handleUpdate = async (message: string, type: string) => {
     await Swal.fire({
       title: type === 'success' ? 'Actualización Exitosa' : 'Error en la Actualización',
+      text: message,
+      icon: type === 'success' ? 'success' : 'error',
+      confirmButtonText: 'Ok'
+    });
+  };
+
+  const handleCreate = async (message: string, type: string) => {
+    await Swal.fire({
+      title: type === 'success' ? 'Creación Exitosa' : 'Error en la Creación',
       text: message,
       icon: type === 'success' ? 'success' : 'error',
       confirmButtonText: 'Ok'
@@ -220,12 +230,12 @@ const BodiesRegister = () => {
         </DropdownMenu>
         <div className="flex flex-col gap-1">
           <div className="flex items-center space-x-2">
-            <Button 
-              className="flex items-center bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500"
-              onClick={() => setShowRegisterModal(true)}
-            >
-              <span>Registrar Cuerpo</span>
-            </Button>
+            <CreateBodyDialog
+              onCreate={(message, type) => {
+                  handleCreate(message, type);
+                  fetchData();
+                }}
+            />
             <Button 
               className="flex items-center space-x-2 bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500"
               onClick={handleExport}
