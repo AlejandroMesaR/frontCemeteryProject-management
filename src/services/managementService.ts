@@ -34,6 +34,16 @@ export const deleteBodyById = async (idCadaver: string) => {
       throw error;
     }
   };
+
+  export const updateBodyById = async (idCadaver: string, cuerpoActualizado: CuerpoInhumado) => {
+    try {
+      const response = await apiManagement.put(`/cuerposinhumados/${idCadaver}`, cuerpoActualizado);
+      return response.data;
+    } catch (error) {
+      console.error(`Error al actualizar el cuerpo con id ${idCadaver}:`, error);
+      throw error;
+    }
+  };
   
 
 export const getAllNichos = async () => {
