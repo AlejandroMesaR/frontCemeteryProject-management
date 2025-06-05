@@ -4,7 +4,7 @@ import { FaFileExport, FaSearch, FaFilter, FaList, FaTrash } from "react-icons/f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"; 
 import { Button } from "../../components/ui/button"; 
 import { Input } from "../../components/utilsComponents/Input"; 
-import { getAllBodies, deleteBodyById, createBody } from "../../services/managementService"; 
+import { getAllBodies, deleteBodyById, createBody, updateBodyById } from "../../services/managementService"; 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
 import { CuerpoInhumado, MappedBody } from "../../models/CuerpoInhumado"; 
 import Swal from 'sweetalert2';
