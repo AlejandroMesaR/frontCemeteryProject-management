@@ -7,7 +7,15 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": ["./src/*"],
+    },
+    "target": "ESNext",
+    "module": "ESNext",
+    "strict": true,
+    "jsx": "preserve",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "types": ["vitest/globals", "@testing-library/jest-dom, vitest"],
+    "skipLibCheck": true // Optional: Speeds up compilation by skipping library checks
   }
 }

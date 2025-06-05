@@ -2,6 +2,8 @@ import { NichoCuerpoCreate } from '@/models/NichoCuerpo';
 import {apiManagement} from '../api/axios';
 import { CuerpoInhumado } from "../models/CuerpoInhumado";
 import { Nicho } from "../models/Nicho";
+import { EventoCuerpo } from '../models/EventoCuerpo';
+import { EventoCuerpoUpdate } from '@/models';
 
 
 export const getAllBodies = async () => {
@@ -25,26 +27,25 @@ export const deleteBodyById = async (idCadaver: string) => {
   }
 };
 
-  export const createBody = async (nuevoCuerpo: Omit<CuerpoInhumado, "idCadaver">) => {
-    try {
-      const response = await apiManagement.post('/cuerposinhumados', nuevoCuerpo);
-      return response.data;
-    } catch (error) {
-      console.error("Error al crear el cuerpo:", error);
-      throw error;
-    }
-  };
+export const createBody = async (nuevoCuerpo: Omit<CuerpoInhumado, "idCadaver">) => {
+  try {
+    const response = await apiManagement.post('/cuerposinhumados', nuevoCuerpo);
+    return response.data;
+  } catch (error) {
+    console.error("Error al crear el cuerpo:", error);
+    throw error;
+  }
+};
 
-  export const updateBodyById = async (idCadaver: string, cuerpoActualizado: CuerpoInhumado) => {
-    try {
-      const response = await apiManagement.put(`/cuerposinhumados/${idCadaver}`, cuerpoActualizado);
-      return response.data;
-    } catch (error) {
-      console.error(`Error al actualizar el cuerpo con id ${idCadaver}:`, error);
-      throw error;
-    }
-  };
-  
+export const updateBody = async (idCadaver: string, updatedData: Partial<CuerpoInhumado>) => {
+  try {
+    const response = await apiManagement.put(`/cuerposinhumados/${idCadaver}`, updatedData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al actualizar el cuerpo con id ${idCadaver}:`, error);
+    throw error;
+  }
+}
 
 export const getAllNichos = async () => {
   try {
@@ -193,6 +194,147 @@ export const getNichoByIdCuerpo = async (idCuerpo: string): Promise<Nicho | null
     // Otros errores sí deben registrarse
     console.error('Error inesperado al obtener el nicho:', error);
     throw error;
+  }
+};
+
+/**
+ * Gets all events for a specific body by its ID
+ * @param idCadaver The body ID
+ * @returns Array of EventoCuerpo objects
+ */
+export const getEventsByBodyId = async (idCadaver: string): Promise<EventoCuerpo[]> => {
+  try {
+    const response = await apiManagement.get(`/eventoscuerpos/cuerpo/${idCadaver}`);
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      `Error al obtener los eventos del cuerpo (status ${error.response?.status})`;
+    throw new Error(message);
+  }
+};
+
+/**
+ * Creates a new event for a specific body
+ * @param eventData The event data
+ * @returns The created EventoCuerpo object
+ */
+export const createEvent = async (eventData: Omit<EventoCuerpo, "id">): Promise<EventoCuerpo> => {
+  try {
+    const response = await apiManagement.post('/eventoscuerpos', eventData);
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      `Error al crear el evento (status ${error.response?.status})`;
+    throw new Error(message);
+  }
+};
+
+export const createEventFile = async (formData: FormData): Promise<EventoCuerpo> => {
+  try {
+    const response = await apiManagement.post<EventoCuerpo>("/eventoscuerpos", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      // Backend returned an error response
+      throw new Error(error.response.data || `HTTP error! Status: ${error.response.status}`);
+    } else if (error.request) {
+      // No response received
+      throw new Error("No response from server");
+    } else {
+      // Other errors (e.g., configuration issue)
+      throw new Error(error.message);
+    }
+  }
+};
+
+/**
+ * Updates an existing event
+ * @param id The event ID
+ * @param eventData The updated event data
+ * @returns The updated EventoCuerpo object
+ */
+export const updateEvent = async (id: string, eventData: Partial<EventoCuerpoUpdate>): Promise<EventoCuerpo> => {
+  try {
+    const response = await apiManagement.put(`/eventoscuerpos/${id}`, eventData);
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      `Error al actualizar el evento (status ${error.response?.status})`;
+    throw new Error(message);
+  }
+};
+
+/**
+ * Deletes an event by its ID
+ * @param id The event ID
+ * @returns True if deletion was successful
+ */
+export const deleteEvent = async (id: string): Promise<boolean> => {
+  try {
+    const response = await apiManagement.delete(`/eventoscuerpos/${id}`);
+    return response.status === 204;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      `Error al eliminar el evento (status ${error.response?.status})`;
+    throw new Error(message);
+  }
+};
+
+/**
+ * Gets a body by its ID
+ * @param idCadaver The body ID
+ * @returns The CuerpoInhumado object
+ */
+export const getBodyById = async (idCadaver: string): Promise<CuerpoInhumado> => {
+  try {
+    const response = await apiManagement.get(`/cuerposinhumados/${idCadaver}`);
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      `Error al obtener el cuerpo por ID (status ${error.response?.status})`;
+    throw new Error(message);
+  }
+}
+
+// Función para descargar archivo de Cloudinary
+export const downloadCloudinaryFile = async (url: string, fileName: string): Promise<void> => {
+  try {
+    // Obtener el archivo como blob
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Error al descargar: ${response.status}`);
+    }
+    
+    // Convertir la respuesta a blob
+    const blob = await response.blob();
+    
+    // Crear una URL para el blob
+    const downloadUrl = window.URL.createObjectURL(blob);
+    
+    // Crear un elemento a temporal
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = fileName || 'archivo_descargado';
+    
+    // Añadir, hacer clic y eliminar el enlace
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Liberar la URL
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    console.error("Error al descargar el archivo:", error);
+    throw new Error("No se pudo descargar el archivo");
   }
 };
   

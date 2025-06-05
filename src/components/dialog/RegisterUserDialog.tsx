@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import Button from "../utilsComponents/Button";
+import { Button } from "@/components/ui/button";
 import { Input } from "../utilsComponents/Input";
 import { Label } from "../utilsComponents/Label";
 import { Eye, EyeOff } from "lucide-react";
@@ -14,27 +14,31 @@ interface AddUserDialogProps {
 
 
 const AddUserDialog = ({onComplete}: AddUserDialogProps) => {
+  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false); 
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ username: '', email: '', password: '', identificationNumber: '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
+    setLoading(true);
     e.preventDefault();
     console.log(form);
     try {
       await registerUser(form);
-      setOpen(false);
       onComplete(`Usuario ${form.username} registrado correctamente`, 'success');
     } catch (err: any) {
       setOpen(false);
       onComplete("Error al registrar usuario", 'error');
+    } finally {
+      setLoading(false);
+      setOpen(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button onClick={() => setOpen(true)} className="bg-black text-white">Agregar Usuario</Button>
+        <Button variant="destructive" className="bg-gray-700 hover:bg-gray-800" size="default" onClick={() => setOpen(true)} >Agregar Usuario</Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg rounded-lg">
         <DialogHeader>
@@ -70,7 +74,9 @@ const AddUserDialog = ({onComplete}: AddUserDialogProps) => {
               </button>
             </div>
           </div>
-          <Button onClick={handleSubmit} className="w-full bg-black text-white">Guardar Usuario</Button>
+          <Button onClick={handleSubmit} className="w-full bg-black text-white">
+            {loading ? "Guardando..." : "Registrar Usuario"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

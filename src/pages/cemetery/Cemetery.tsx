@@ -36,6 +36,7 @@ const CemeteryMap = () => {
     try {
       setLoading(true);
       const data = await getAllNichos();
+      console.log('fetchNichos data:', data); // Debug
       setNichos(data);
       setFilteredNichos(data);
       setError(null);
@@ -83,6 +84,7 @@ const CemeteryMap = () => {
   };
 
   useEffect(() => {
+    console.log('Calling fetchNichos'); // Debug
     fetchNichos();
   }, []);
 
@@ -100,7 +102,7 @@ const CemeteryMap = () => {
 
       {/* Dashboard stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 shadow-sm">
+        <Card className="p-4 shadow-sm" data-testid="stats-total">
           <h3 className="text-sm font-medium text-gray-500">Total de nichos</h3>
           <p className="text-2xl font-bold mt-1">{totalNichos}</p>
           <div className="mt-2">
@@ -108,7 +110,7 @@ const CemeteryMap = () => {
           </div>
         </Card>
         
-        <Card className="p-4 shadow-sm">
+        <Card className="p-4 shadow-sm" data-testid="stats-ocupados">
           <h3 className="text-sm font-medium text-gray-500">Ocupados</h3>
           <p className="text-2xl font-bold mt-1 text-red-600">{ocupados} <span className="text-sm text-gray-500 font-normal">({porcentajeOcupados}%)</span></p>
           <div className="mt-2 progress-red">
@@ -116,7 +118,7 @@ const CemeteryMap = () => {
           </div>
         </Card>
         
-        <Card className="p-4 shadow-sm">
+        <Card className="p-4 shadow-sm" data-testid="stats-disponibles">
           <h3 className="text-sm font-medium text-gray-500">Disponibles</h3>
           <p className="text-2xl font-bold mt-1 text-green-600">{disponibles} <span className="text-sm text-gray-500 font-normal">({porcentajeDisponibles}%)</span></p>
           <div className="mt-2 progress-green">
@@ -124,7 +126,7 @@ const CemeteryMap = () => {
           </div>
         </Card>
         
-        <Card className="p-4 shadow-sm">
+        <Card className="p-4 shadow-sm" data-testid="stats-mantenimiento">
           <h3 className="text-sm font-medium text-gray-500">En mantenimiento</h3>
           <p className="text-2xl font-bold mt-1 text-yellow-600">{enMantenimiento} <span className="text-sm text-gray-500 font-normal">({porcentajeMantenimiento}%)</span></p>
           <div className="mt-2 progress-yellow">
@@ -143,11 +145,12 @@ const CemeteryMap = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9 max-w-md"
+            data-testid="search-input"
           />
         </div>
         <div className="flex gap-2 items-center">
           <Filter className="text-gray-400 h-4 w-4" />
-          <Select value={filterState} onValueChange={setFilterState}>
+          <Select value={filterState} onValueChange={setFilterState} data-testid="state-filter">
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filtrar por estado" />
             </SelectTrigger>
@@ -168,7 +171,7 @@ const CemeteryMap = () => {
           <h2 className="text-lg font-semibold text-gray-800">Mapa de Nichos</h2>
           
           {loading && (
-            <div className="flex justify-center items-center h-64">
+            <div className="flex justify-center items-center h-64" data-testid="loading-spinner" role="status" aria-label="loading">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
             </div>
           )}
@@ -205,6 +208,7 @@ const CemeteryMap = () => {
                           <button
                             className={`h-12 w-full flex items-center justify-center rounded-lg text-sm font-semibold border transition-all ${getNicheStyle(nicho.estado)}`}
                             title={nicho.ubicacion}
+                            data-testid={`nicho-${nicho.codigo}`}
                           >
                             {getNicheNumber(nicho.ubicacion)}
                           </button>
@@ -247,7 +251,7 @@ const CemeteryMap = () => {
           </div>
           
           <AssignNichoDialog
-            trigger={<Button className="w-full bg-sky-950 hover:bg-sky-700 text-white">Asignar Nicho</Button>}
+            trigger={<Button className="w-full bg-gray-700 hover:bg-gray-800 text-white">Asignar Nicho</Button>}
             onAssigned={popupSuccess}
           />
         </Card>

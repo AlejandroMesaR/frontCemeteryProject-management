@@ -1,43 +1,43 @@
 import { useEffect, useState } from "react";
-import { FaFileExport, FaSearch, FaFilter } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import { FaFileExport, FaSearch, FaFilter, FaList, FaTrash } from "react-icons/fa";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"; 
-import Button  from "../../components/utilsComponents/Button"; 
+import { Button } from "../../components/ui/button"; 
 import { Input } from "../../components/utilsComponents/Input"; 
 import { getAllBodies, deleteBodyById, createBody, updateBodyById } from "../../services/managementService"; 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
 import { CuerpoInhumado, MappedBody } from "../../models/CuerpoInhumado"; 
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
-
+import { getUserId, isAuthenticated } from "../../utils/auth";
+import EditBodyDialog from "../../components/dialog/EditBodyDialogProps";
+import CreateBodyDialog from "@/components/dialog/CreateBodyDialogProps";
 
 const BodiesRegister = () => {
-
   const [bodiesData, setBodiesData] = useState<MappedBody[]>([]);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("All");
-
-  //ver
+  const [isGenerating, setIsGenerating] = useState(false);
   const [allBodies, setAllBodies] = useState<CuerpoInhumado[]>([]);
   const [selectedBody, setSelectedBody] = useState<CuerpoInhumado | null>(null);
   const [showModal, setShowModal] = useState(false);
   
-    useEffect(() => {
-    const fetchData = async () => {
-      const data: CuerpoInhumado[] = await getAllBodies();
-      setAllBodies(data); 
+  const fetchData = async () => {
+    const data: CuerpoInhumado[] = await getAllBodies();
+    setAllBodies(data); 
 
-      const mappedData: MappedBody[] = data.map((item) => ({
-        id: item.idCadaver,
-        name: `${item.nombre} ${item.apellido}`,
-        date: item.fechaIngreso,
-        state: item.estado,
-        document: item.documentoIdentidad,
-        description: item.observaciones || "Sin observaciones",
-       
-      }));
-      setBodiesData(mappedData);
-    };
+    const mappedData: MappedBody[] = data.map((item) => ({
+      id: item.idCadaver,
+      name: `${item.nombre} ${item.apellido}`,
+      date: item.fechaIngreso,
+      state: item.estado,
+      document: item.documentoIdentidad,
+      description: item.observaciones || "Sin observaciones",
+    }));
+    setBodiesData(mappedData);
+  };
 
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -56,90 +56,153 @@ const BodiesRegister = () => {
     );
   });
 
-  //Inicio Logica de la paginacion
-
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 6;
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentItems = filteredData.slice(startIndex, endIndex);
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  //Fin logica Pginacion
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará el cuerpo de manera permanente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        confirmButton: 'bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded mr-2',
+        cancelButton: 'bg-gray-300 text-black hover:bg-gray-400 px-4 py-2 rounded'
+      },
+      buttonsStyling: false 
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteBodyById(id);
+        Swal.fire('Eliminado', 'El cuerpo ha sido eliminado exitosamente.', 'success');
+        setBodiesData((prev) => prev.filter((item) => item.id !== id));
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        Swal.fire('Error', `Ocurrió un error al eliminar: ${errorMessage}`, 'error');
+      }
+    }
+  };
+
+  const handleUpdate = async (message: string, type: string) => {
+    await Swal.fire({
+      title: type === 'success' ? 'Actualización Exitosa' : 'Error en la Actualización',
+      text: message,
+      icon: type === 'success' ? 'success' : 'error',
+      confirmButtonText: 'Ok'
+    });
+  };
+
+  const handleCreate = async (message: string, type: string) => {
+    await Swal.fire({
+      title: type === 'success' ? 'Creación Exitosa' : 'Error en la Creación',
+      text: message,
+      icon: type === 'success' ? 'success' : 'error',
+      confirmButtonText: 'Ok'
+    });
+  };
 
 
-  //Alerta de eliminar
-
-const handleDelete = async (id: string) => {
-  const result = await Swal.fire({
-    title: '¿Estás seguro?',
-    text: 'Esta acción eliminará el cuerpo de manera permanente.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar',
-    customClass: {
-      confirmButton: 'bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded mr-2',
-      cancelButton: 'bg-gray-300 text-black hover:bg-gray-400 px-4 py-2 rounded'
-    },
-    buttonsStyling: false 
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [newBodyData, setNewBodyData] = useState<Omit<CuerpoInhumado, "idCadaver">>({
+    nombre: "",
+    apellido: "",
+    documentoIdentidad: "",
+    numeroProtocoloNecropsia: "",
+    causaMuerte: "",
+    fechaNacimiento: "",
+    fechaDefuncion: new Date(),
+    fechaIngreso: "",
+    fechaInhumacion: "",
+    fechaExhumacion: "",
+    funcionarioReceptor: "",
+    cargoFuncionario: "",
+    autoridadRemitente: "",
+    cargoAutoridadRemitente: "",
+    autoridadExhumacion: "",
+    cargoAutoridadExhumacion: "",
+    estado: "",
+    observaciones: "",
   });
 
-  if (result.isConfirmed) {
-    try {
-      await deleteBodyById(id);
-      Swal.fire('Eliminado', 'El cuerpo ha sido eliminado exitosamente.', 'success');
-      setBodiesData((prev) => prev.filter((item) => item.id !== id));
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      Swal.fire('Error', 'Ocurrió un error al eliminar.', 'error');
+  const handleViewDetails = (id: string) => {
+    const fullBody = allBodies.find((body) => body.idCadaver === id);
+    if (fullBody) {
+      setSelectedBody(fullBody);
+      setShowModal(true);
     }
-  }
-};
+  };
 
-//Fin alerta de eliminar
+  const handleExport = async () => {
+    if (!isAuthenticated()) {
+      Swal.fire('Error', 'No estás autenticado. Por favor, inicia sesión.', 'error');
+      return;
+    }
 
-// Alerta de creacion de cuerpo
-const [showRegisterModal, setShowRegisterModal] = useState(false);
-const [newBodyData, setNewBodyData] = useState<Omit<CuerpoInhumado, "idCadaver">>({
-  nombre: "",
-  apellido: "",
-  documentoIdentidad: "",
-  numeroProtocoloNecropsia: "",
-  causaMuerte: "",
-  fechaNacimiento: "",
-  fechaDefuncion: new Date(),
-  fechaIngreso: "",
-  fechaInhumacion: "",
-  fechaExhumacion: "",
-  funcionarioReceptor: "",
-  cargoFuncionario: "",
-  autoridadRemitente: "",
-  cargoAutoridadRemitente: "",
-  autoridadExhumacion: "",
-  cargoAutoridadExhumacion: "",
-  estado: "",
-  observaciones: "",
-});
+    const userId = getUserId();
+    if (!userId) {
+      Swal.fire('Error', 'No se pudo obtener el ID del usuario. Por favor, inicia sesión nuevamente.', 'error');
+      return;
+    }
 
+    setIsGenerating(true);
 
-//Ver
-const handleViewDetails = (id: string) => {
-  const fullBody = allBodies.find((body) => body.idCadaver === id);
-  if (fullBody) {
-    setSelectedBody(fullBody);
-    setShowModal(true);
-  }
-};
+    try {
+      const response = await fetch(`http://localhost:8083/reportes/descargar-cuerpos?usuarioId=${userId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/pdf",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Error al exportar la lista de cuerpos');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "lista-cuerpos.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      const data: CuerpoInhumado[] = await getAllBodies();
+      const mappedData: MappedBody[] = data.map((item) => ({
+        id: item.idCadaver,
+        name: `${item.nombre} ${item.apellido}`,
+        date: item.fechaIngreso,
+        state: item.estado,
+        document: item.documentoIdentidad,
+        description: item.observaciones || "Sin observaciones",
+      }));
+      setBodiesData(mappedData);
+
+      Swal.fire('Éxito', 'La lista de cuerpos ha sido exportada exitosamente.', 'success');
+      setIsGenerating(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error('Error al exportar la lista de cuerpos:', error);
+      Swal.fire('Error', `Ocurrió un error al exportar la lista: ${errorMessage}`, 'error');
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-semibold">Body Admissions</h2>
-      <p className="text-gray-500">Records of recent body admissions to the sanctuary</p>
+      <h2 className="text-2xl font-semibold">Admisiones del cuerpo</h2>
+      <p className="text-gray-500">Registros de ingresos recientes de cuerpos al cementerio</p>
 
-      {/* Search and Filters */}
       <div className="flex justify-between items-center mt-4">
         <div className="relative">
           <FaSearch className="absolute left-3 top-2.5 text-gray-400" />
@@ -165,23 +228,28 @@ const handleViewDetails = (id: string) => {
             <DropdownMenuItem onClick={() => setFilterType("EXHUMADO")}>Exhumado</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <div className="flex items-center space-x-2">
-        <Button 
-          className="flex items-center bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500"
-          onClick={() => setShowRegisterModal(true)}
-        >
-          <span>Registrar Cuerpo</span>
-        </Button>
-
-
-          <Button className="flex items-center space-x-2 bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500">
-            <FaFileExport />
-            <span>Export</span>
-          </Button>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center space-x-2">
+            <CreateBodyDialog
+              onCreate={(message, type) => {
+                  handleCreate(message, type);
+                  fetchData();
+                }}
+            />
+            <Button 
+              className="flex items-center space-x-2 bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500"
+              onClick={handleExport}
+            >
+              <FaFileExport />
+              <span>Exportar</span>
+            </Button>
+          </div>
+          {isGenerating && (
+            <p className="text-sm text-gray-500">El archivo se está generando...</p>
+          )}
         </div>
       </div>
 
-      {/* Table */}
       <div className="mt-4 overflow-x-auto">
         <Table className="w-full border rounded-lg">
           <TableHeader>
@@ -195,31 +263,44 @@ const handleViewDetails = (id: string) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentItems.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.name}</TableCell>
-                <TableCell>{item.date}</TableCell> 
+            {allBodies.map((item) => (
+              <TableRow key={item.idCadaver}>
+                <TableCell>{item.nombre+" "+item.apellido}</TableCell>
+                <TableCell>{item.fechaIngreso}</TableCell> 
                 <TableCell>
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      item.state === "Inhumado" ? "bg-gray-200 text-gray-700" : "bg-blue-600 text-white"
+                      item.estado === "Inhumado" ? "bg-gray-200 text-gray-700" : "bg-blue-600 text-white"
                     }`}
                   >
-                    {item.state}
+                    {item.estado}
                   </span>
                 </TableCell>
-                <TableCell>{item.document}</TableCell>
-                <TableCell>{item.description}</TableCell> 
-                <TableCell>
+                <TableCell>{item.documentoIdentidad}</TableCell>
+                <TableCell>{item.observaciones}</TableCell> 
+                <TableCell className="flex gap-1">
                   <Button 
-                    className="bg-blue-600 ho  hover:underline hover:bg-blue-400 transition mr-1"
-                    onClick={() => handleViewDetails(item.id)}
-                    >Ver</Button>
-                  <Button className="bg-yellow-600 hover:underline mr-1 hover:bg-yellow-400 transition ">Editar</Button>
+                    className="bg-blue-600 hover:underline hover:bg-blue-400 transition"
+                    onClick={() => handleViewDetails(item.idCadaver)}
+                  >Ver</Button>
+                  <EditBodyDialog
+                      body={item}
+                      onUpdate={(message, type) => {
+                        handleUpdate(message, type);
+                        fetchData();
+                      }}
+                  />
                   <Button
-                    className="bg-red-600 text-white hover:underline hover:bg-red-400 transition "
-                    onClick={() => handleDelete(item.id)}>Eliminar
+                    size='icon'
+                    className="bg-red-600 text-white hover:underline hover:bg-red-400 transition"
+                    onClick={() => handleDelete(item.idCadaver)}>
+                      <FaTrash />
                   </Button>
+                  <Link to={`events/${item.idCadaver}`}>
+                    <Button size='icon' className="bg-green-600 text-white hover:underline hover:bg-green-400 transition" >
+                      <FaList className="size-5" />
+                    </Button>
+                  </Link>
                 </TableCell>
               </TableRow>
             ))}
@@ -227,7 +308,6 @@ const handleViewDetails = (id: string) => {
         </Table>
       </div>
 
-      {/* Pagination */}
       <div className="flex justify-between items-center text-gray-500 mt-4">
         <span>
           Mostrando {startIndex + 1} -{" "}
@@ -255,11 +335,11 @@ const handleViewDetails = (id: string) => {
           </Button>
         </div>
       </div>
-      {/* Modal de detalles */}
+
       {showModal && selectedBody && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-8 text-center  ">Detalles del Cuerpo</h3>
+            <h3 className="text-xl font-semibold mb-8 text-center">Detalles del Cuerpo</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <p><strong>Nombre:</strong> {selectedBody.nombre} {selectedBody.apellido}</p>
               <p><strong>Documento:</strong> {selectedBody.documentoIdentidad}</p>
@@ -289,87 +369,87 @@ const handleViewDetails = (id: string) => {
       )}
       {showRegisterModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-          <h3 className="text-xl font-semibold mb-4 text-center">Registrar Nuevo Cuerpo</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            {Object.entries(newBodyData).map(([key, value]) => (
-              key !== "estado" ? ( // todos los campos menos estado
-                <div key={key} className="flex flex-col">
-                  <label className="text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
-                  <input
-                    type={key.includes("fechaIngreso") ? "datetime-local" :
-                          key.includes("fecha") ? "date" : "text"}
-                    value={
-                      key.includes("fechaIngreso")
-                        ? (value ? (value as string).slice(0, 16) : "")
-                        : key.includes("fecha")
-                          ? (value ? new Date(value).toISOString().split('T')[0] : "")
-                          : (value as string)
-                    }
-                    onChange={(e) => {
-                      const newValue = e.target.value;
-                      setNewBodyData((prev) => ({
-                        ...prev,
-                        [key]: newValue
-                      }));
-                    }}
-                    className="border p-2 rounded"
-                  />
-                </div>
-              ) : null
-            ))}
-            {/* Campo especial estado */}
-            <div className="flex flex-col">
-              <label className="text-gray-700">Estado</label>
-              <select
-                value={newBodyData.estado}
-                onChange={(e) => setNewBodyData((prev) => ({
-                  ...prev,
-                  estado: e.target.value
-                }))}
-                className="border p-2 rounded"
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-semibold mb-4 text-center">Registrar Nuevo Cuerpo</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {Object.entries(newBodyData).map(([key, value]) => (
+                key !== "estado" ? (
+                  <div key={key} className="flex flex-col">
+                    <label className="text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
+                    <input
+                      type={key.includes("fechaIngreso") ? "datetime-local" :
+                            key.includes("fecha") ? "date" : "text"}
+                      value={
+                        key.includes("fechaIngreso")
+                          ? (value ? (value as string).slice(0, 16) : "")
+                          : key.includes("fecha")
+                            ? (value ? new Date(value).toISOString().split('T')[0] : "")
+                            : (value as string)
+                      }
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setNewBodyData((prev) => ({
+                          ...prev,
+                          [key]: newValue
+                        }));
+                      }}
+                      className="border p-2 rounded"
+                    />
+                  </div>
+                ) : null
+              ))}
+              <div className="flex flex-col">
+                <label className="text-gray-700">Estado</label>
+                <select
+                  value={newBodyData.estado}
+                  onChange={(e) => setNewBodyData((prev) => ({
+                    ...prev,
+                    estado: e.target.value
+                  }))}
+                  className="border p-2 rounded"
+                >
+                  <option value="">Seleccione estado</option>
+                  <option value="INHUMADO">Inhumado</option>
+                  <option value="EXHUMADO">Exhumado</option>
+                </select>
+              </div>
+            </div>
+      
+            <div className="flex justify-end gap-4 mt-6">
+              <Button
+                className="bg-gray-400 text-black px-4 py-2 rounded hover:bg-gray-500"
+                onClick={() => setShowRegisterModal(false)}
               >
-                <option value="">Seleccione estado</option>
-                <option value="INHUMADO">Inhumado</option>
-                <option value="EXHUMADO">Exhumado</option>
-              </select>
+                Cancelar
+              </Button>
+              <Button
+                className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-500"
+                onClick={async () => {
+                  try {
+                    const bodyToSend = {
+                      ...newBodyData,
+                      fechaIngreso: newBodyData.fechaIngreso
+                        ? newBodyData.fechaIngreso + ":00"
+                        : "",
+                    };
+                    await createBody(bodyToSend);
+                    Swal.fire('Éxito', 'El cuerpo fue registrado exitosamente.', 'success');
+                    setShowRegisterModal(false);
+                    window.location.reload(); 
+                  } catch (error: unknown) {
+                    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+                    Swal.fire('Error', `Ocurrió un error al registrar el cuerpo: ${errorMessage}`, 'error');
+                  }
+                }}
+              >
+                Registrar
+              </Button>
             </div>
           </div>
-    
-          <div className="flex justify-end gap-4 mt-6">
-            <Button
-              className="bg-gray-400 text-black px-4 py-2 rounded hover:bg-gray-500"
-              onClick={() => setShowRegisterModal(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-500"
-              onClick={async () => {
-                try {
-                  const bodyToSend = {
-                    ...newBodyData,
-                    fechaIngreso: newBodyData.fechaIngreso
-                      ? newBodyData.fechaIngreso + ":00"
-                      : "", // agregar segundos para datetime-local
-                  };
-                  await createBody(bodyToSend);
-                  Swal.fire('Éxito', 'El cuerpo fue registrado exitosamente.', 'success');
-                  setShowRegisterModal(false);
-                  window.location.reload(); 
-                } catch (error) {
-                  Swal.fire('Error', 'Ocurrió un error al registrar el cuerpo.', 'error');
-                }
-              }}
-            >
-              Registrar
-            </Button>
-          </div>
         </div>
-      </div>
-    )}
-
+      )}
     </div>
-);
+  );
 }
+
 export default BodiesRegister;

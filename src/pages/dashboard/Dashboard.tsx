@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Boxes, CircleOff, LayoutDashboard, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
-import 'sweetalert2/dist/sweetalert2.min.css';
 import { getAllBodies, getAllNichos, getAvailableNichos, searchBodies, getNichoByIdCuerpo } from '../../services/managementService';
 import { formatDate } from '../cemetery/functionsCementery';
 import { CuerpoInhumado } from '@/models';
@@ -14,6 +13,14 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDebounce } from '@/components/utilsComponents/useDebounce';
 import { capitalize } from 'lodash';
+import Slider from 'react-slick';
+
+// Define carousel images
+const carouselImages = [
+  { src: "src/assets/HomeImages/MainImage1.jpg", alt: "Cemetery Image 1" },
+  { src: "src/assets/HomeImages/MainImage2.jpg", alt: "Cemetery Image 2" },
+  { src: "src/assets/HomeImages/MainImage3.jpg", alt: "Cemetery Image 3" },
+];
 
 function Dashboard() {
   const [totalCuerpos, setTotalCuerpos] = useState(0);
@@ -26,7 +33,7 @@ function Dashboard() {
   const [selectedNicho, setSelectedNicho] = useState<Nicho | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [noResults, setNoResults] = useState(false);
-  
+
   // Use debounce to avoid too many API calls
   const debouncedSearch = useDebounce(search, 500);
 
@@ -37,7 +44,7 @@ function Dashboard() {
       setTotalCuerpos(cuerpos.length);
 
       const nichos = await getAllNichos();
-      setTotalNichos(nichos.length);   
+      setTotalNichos(nichos.length);
 
       // Obtener nichos totales y disponibles
       const nichosTotales = await getAllNichos();
@@ -87,11 +94,10 @@ function Dashboard() {
       if (nicho === null) {
         console.log("No se encontró información del nicho para el cuerpo seleccionado.");
         setSelectedNicho(null);
-      }else {
+      } else {
         console.log("Información del nicho:", nicho);
         setSelectedNicho(nicho);
       }
-
     } catch (error) {
       console.error("Error al obtener información del nicho:", error);
       setSelectedNicho(null);
@@ -112,20 +118,47 @@ function Dashboard() {
     fetchData();
   }, []);
 
+  // Slider settings
+  const sliderSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 3000,
+    arrows: true,
+  };
+
   return (
     <div className="flex flex-col h-full space-y-3">
       <div className='bg-gray-100 px-4 mt-5'>
-        <div className='w-full h-96 bg-gray-600 flex items-center py-2 justify-between px-4 rounded-lg shadow-md'>
-          <div className='flex flex-col space-y-2'>
-            <h1 className='text-3xl text-white font-bold'>Imagenes</h1>
-            <p className='text-sm text-gray-200'>Bienvenido al sistema de gestión de cementerios.</p>
-          </div>
+        <div className='w-full h-96 bg-gray-600 rounded-lg shadow-md relative overflow-hidden'>
+          <Slider {...sliderSettings}>
+            {carouselImages.map((image, index) => (
+              <div key={index} className="relative h-96">
+                <img
+                  src={image.src}
+                  alt={image.alt}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <h1 className="text-3xl font-bold mb-2">Sistema de Gestión de Cementerios</h1>
+                    <p className="text-sm">Bienvenido al sistema de gestión de cementerios.</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </Slider>
         </div>
 
         <div className="grid grid-cols-12 gap-2 flex-1 p-2 pt-5">
-          <div className="col-span-5 flex flex-col space-y-2">
-
-            <Card className="overflow-hidden w-3/4 border-l-4 border-l-blue-500">
+          <div className="col-span-5 flex flex-col space-y-4">
+            <Card 
+              className="overflow-hidden w-2/3 border-l-4 border-l-blue-500 shadow-lg" 
+              data-testid="cuerpos-card"
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
                   <Boxes className="mr-2 h-4 w-4 text-blue-500" />
@@ -142,7 +175,10 @@ function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="overflow-hidden w-3/4 border-l-4 border-l-green-500">
+            <Card 
+              className="overflow-hidden w-2/3 border-l-4 border-l-green-500 shadow-lg ml-14" 
+              data-testid="nichos-card"
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
                   <CircleOff className="mr-2 h-4 w-4 text-green-500" />
@@ -165,7 +201,10 @@ function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="overflow-hidden w-3/4 border-l-4 border-l-amber-500">
+            <Card 
+              className="overflow-hidden w-2/3 border-l-4 border-l-amber-500 shadow-lg ml-28" 
+              data-testid="ocupacion-card"
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500 flex items-center">
                   <LayoutDashboard className="mr-2 h-4 w-4 text-amber-500" />
@@ -309,7 +348,7 @@ function Dashboard() {
                       <div className="text-gray-500 italic">
                         Este cuerpo no está asignado a un nicho.
                       </div>
-                    ):(
+                    ):( 
                       <div className="text-gray-500 italic">
                         Cargando información del nicho...
                       </div>
