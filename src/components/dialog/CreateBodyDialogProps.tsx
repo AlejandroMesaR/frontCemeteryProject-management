@@ -139,7 +139,7 @@ export default function CreateBodyDialog({ onCreate }: CreateBodyDialogProps) {
             <div className="flex flex-col">
               <label className="text-gray-700">Fecha de Nacimiento</label>
               <Input
-                type="datetime-local"
+                type="date"
                 name="fechaNacimiento"
                 value={formatDateForInput(formData.fechaNacimiento)}
                 onChange={handleChange}
@@ -149,7 +149,7 @@ export default function CreateBodyDialog({ onCreate }: CreateBodyDialogProps) {
             <div className="flex flex-col">
               <label className="text-gray-700">Fecha de Defunción</label>
               <Input
-                type="datetime-local"
+                type="date"
                 name="fechaDefuncion"
                 value={formatDateForInput(formData.fechaDefuncion)}
                 onChange={handleChange}
@@ -169,7 +169,7 @@ export default function CreateBodyDialog({ onCreate }: CreateBodyDialogProps) {
             <div className="flex flex-col">
               <label className="text-gray-700">Fecha de Inhumación</label>
               <Input
-                type="datetime-local"
+                type="date"
                 name="fechaInhumacion"
                 value={formatDateForInput(formData.fechaInhumacion)}
                 onChange={handleChange}
@@ -179,7 +179,7 @@ export default function CreateBodyDialog({ onCreate }: CreateBodyDialogProps) {
             <div className="flex flex-col">
               <label className="text-gray-700">Fecha de Exhumación</label>
               <Input
-                type="datetime-local"
+                type="date"
                 name="fechaExhumacion"
                 value={formatDateForInput(formData.fechaExhumacion)}
                 onChange={handleChange}
