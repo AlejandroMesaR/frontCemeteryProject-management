@@ -123,11 +123,11 @@ const BodiesRegister = () => {
     documentoIdentidad: "",
     numeroProtocoloNecropsia: "",
     causaMuerte: "",
-    fechaNacimiento: "",
-    fechaDefuncion: new Date(),
-    fechaIngreso: "",
-    fechaInhumacion: "",
-    fechaExhumacion: "",
+    fechaNacimiento: null as unknown as Date,
+    fechaDefuncion: null as unknown as Date,
+    fechaIngreso: null as unknown as Date,
+    fechaInhumacion: null as unknown as Date,
+    fechaExhumacion: null as unknown as Date,
     funcionarioReceptor: "",
     cargoFuncionario: "",
     autoridadRemitente: "",
@@ -273,7 +273,7 @@ const BodiesRegister = () => {
             {allBodies.map((item) => (
               <TableRow key={item.idCadaver}>
                 <TableCell>{item.nombre+" "+item.apellido}</TableCell>
-                <TableCell>{item.fechaIngreso}</TableCell> 
+                <TableCell>{item.fechaIngreso instanceof Date ? item.fechaIngreso.toLocaleDateString() : item.fechaIngreso}</TableCell> 
                 <TableCell>
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -352,11 +352,11 @@ const BodiesRegister = () => {
               <p><strong>Documento:</strong> {selectedBody.documentoIdentidad}</p>
               <p><strong>Protocolo Necropsia:</strong> {selectedBody.numeroProtocoloNecropsia}</p>
               <p><strong>Causa de Muerte:</strong> {selectedBody.causaMuerte}</p>
-              <p><strong>Fecha de Nacimiento:</strong> {selectedBody.fechaNacimiento}</p>
+              <p><strong>Fecha de Nacimiento:</strong> {selectedBody.fechaNacimiento.toISOString()}</p>
               <p><strong>Fecha de Defunción:</strong> {selectedBody.fechaDefuncion.toString()}</p>
-              <p><strong>Fecha de Ingreso:</strong> {selectedBody.fechaIngreso}</p>
-              <p><strong>Fecha de Inhumación:</strong> {selectedBody.fechaInhumacion}</p>
-              <p><strong>Fecha de Exhumación:</strong> {selectedBody.fechaExhumacion}</p>
+              <p><strong>Fecha de Ingreso:</strong> {selectedBody.fechaIngreso.toISOString()}</p>
+              <p><strong>Fecha de Inhumación:</strong> {selectedBody.fechaInhumacion.toISOString()}</p>
+              <p><strong>Fecha de Exhumación:</strong> {selectedBody.fechaExhumacion.toISOString()}</p>
               <p><strong>Funcionario Receptor:</strong> {selectedBody.funcionarioReceptor} ({selectedBody.cargoFuncionario})</p>
               <p><strong>Autoridad Remitente:</strong> {selectedBody.autoridadRemitente} ({selectedBody.cargoAutoridadRemitente})</p>
               <p><strong>Autoridad Exhumación:</strong> {selectedBody.autoridadExhumacion} ({selectedBody.cargoAutoridadExhumacion})</p>
@@ -439,7 +439,7 @@ const BodiesRegister = () => {
                         ? newBodyData.fechaIngreso + ":00"
                         : "",
                     };
-                    await createBody(bodyToSend);
+                    //await createBody(bodyToSend);
                     Swal.fire('Éxito', 'El cuerpo fue registrado exitosamente.', 'success');
                     setShowRegisterModal(false);
                     window.location.reload(); 

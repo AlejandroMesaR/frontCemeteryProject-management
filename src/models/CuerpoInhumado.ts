@@ -23,7 +23,7 @@ export interface CuerpoInhumado {
   export interface MappedBody {
     id: string;
     name: string;
-    date: string;
+    date: Date;
     state: string;
     document: string;
     description: string;

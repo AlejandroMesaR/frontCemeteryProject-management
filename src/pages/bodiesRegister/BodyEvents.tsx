@@ -146,7 +146,7 @@ const BodyEvents = () => {
                 {body.estado}
               </span>
             </div>
-            <div><span className="font-semibold">Fecha de Ingreso:</span> {body.fechaIngreso}</div>
+            <div><span className="font-semibold">Fecha de Ingreso:</span> {body.fechaIngreso instanceof Date ? body.fechaIngreso.toLocaleDateString() : body.fechaIngreso}</div>
           </div>
         </div>
       )}
