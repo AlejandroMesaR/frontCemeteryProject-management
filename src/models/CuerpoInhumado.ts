@@ -5,11 +5,11 @@ export interface CuerpoInhumado {
   documentoIdentidad: string;
   numeroProtocoloNecropsia: string;
   causaMuerte: string;
-  fechaNacimiento: string;
+  fechaNacimiento: Date;
   fechaDefuncion: Date;
-  fechaIngreso: string;
-  fechaInhumacion: string;
-  fechaExhumacion: string;
+  fechaIngreso: Date;
+  fechaInhumacion: Date;
+  fechaExhumacion: Date;
   funcionarioReceptor: string;
   cargoFuncionario: string;
   autoridadRemitente: string;

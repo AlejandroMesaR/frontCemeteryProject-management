@@ -31,10 +31,14 @@ export default function EditBodyDialog({ body, onUpdate }: EditBodyDialogProps) 
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const formatDateForInput = (date: string | Date): string => {
+  const formatDateForInput = (date: string | Date, type: 'date' | 'datetime-local'): string => {
     if (!date) return "";
-    const dateObj = typeof date === "string" ? new Date(date) : date;
-    return dateObj.toISOString().slice(0, 16);
+    const dateObj = date instanceof Date ? date : new Date(date);
+    if (isNaN(dateObj.getTime())) return ""; // Manejar fechas inválidas
+    if (type === 'date') {
+      return dateObj.toISOString().slice(0, 10); // Formato YYYY-MM-DD para input type="date"
+    }
+    return dateObj.toISOString().slice(0, 16); // Formato YYYY-MM-DDTHH:mm para input type="datetime-local"
   };
 
   const handleUpdate = async () => {
@@ -91,9 +95,9 @@ export default function EditBodyDialog({ body, onUpdate }: EditBodyDialogProps) 
             <div className="flex flex-col">
               <label className="text-gray-700">Fecha de Nacimiento</label>
               <Input
-                type="datetime-local"
+                type="date"
                 name="fechaNacimiento"
-                value={formatDateForInput(formData.fechaNacimiento)}
+                value={formatDateForInput(formData.fechaNacimiento, 'date')}
                 onChange={handleChange}
                 className="border p-2 rounded"
               />
@@ -101,9 +105,9 @@ export default function EditBodyDialog({ body, onUpdate }: EditBodyDialogProps) 
             <div className="flex flex-col">
               <label className="text-gray-700">Fecha de Defunción</label>
               <Input
-                type="datetime-local"
+                type="date"
                 name="fechaDefuncion"
-                value={formatDateForInput(formData.fechaDefuncion)}
+                value={formatDateForInput(formData.fechaDefuncion, 'date')}
                 onChange={handleChange}
                 className="border p-2 rounded"
               />
@@ -113,7 +117,7 @@ export default function EditBodyDialog({ body, onUpdate }: EditBodyDialogProps) 
               <Input
                 type="datetime-local"
                 name="fechaIngreso"
-                value={formatDateForInput(formData.fechaIngreso)}
+                value={formatDateForInput(formData.fechaIngreso, 'datetime-local')}
                 onChange={handleChange}
                 className="border p-2 rounded"
               />
@@ -121,9 +125,9 @@ export default function EditBodyDialog({ body, onUpdate }: EditBodyDialogProps) 
             <div className="flex flex-col">
               <label className="text-gray-700">Fecha de Inhumación</label>
               <Input
-                type="datetime-local"
+                type="date"
                 name="fechaInhumacion"
-                value={formatDateForInput(formData.fechaInhumacion)}
+                value={formatDateForInput(formData.fechaInhumacion, 'date')}
                 onChange={handleChange}
                 className="border p-2 rounded"
               />
@@ -131,9 +135,9 @@ export default function EditBodyDialog({ body, onUpdate }: EditBodyDialogProps) 
             <div className="flex flex-col">
               <label className="text-gray-700">Fecha de Exhumación</label>
               <Input
-                type="datetime-local"
+                type="date"
                 name="fechaExhumacion"
-                value={formatDateForInput(formData.fechaExhumacion)}
+                value={formatDateForInput(formData.fechaExhumacion, 'date')}
                 onChange={handleChange}
                 className="border p-2 rounded"
               />
