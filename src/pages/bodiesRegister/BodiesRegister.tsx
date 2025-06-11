@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaFileExport, FaSearch, FaFilter, FaList, FaTrash } from "react-icons/fa";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"; 
-import { Button } from "../../components/ui/button"; 
-import { Input } from "../../components/utilsComponents/Input"; 
-import { getAllBodies, deleteBodyById, createBody } from "../../services/managementService"; 
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/utilsComponents/Input";
+import { getAllBodies, deleteBodyById } from "../../services/managementService";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
-import { CuerpoInhumado, MappedBody } from "../../models/CuerpoInhumado"; 
+import { CuerpoInhumado, MappedBody } from "../../models/CuerpoInhumado";
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { getUserId, isAuthenticated } from "../../utils/auth";
@@ -21,20 +21,26 @@ const BodiesRegister = () => {
   const [allBodies, setAllBodies] = useState<CuerpoInhumado[]>([]);
   const [selectedBody, setSelectedBody] = useState<CuerpoInhumado | null>(null);
   const [showModal, setShowModal] = useState(false);
-  
-  const fetchData = async () => {
-    const data: CuerpoInhumado[] = await getAllBodies();
-    setAllBodies(data); 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
-    const mappedData: MappedBody[] = data.map((item) => ({
-      id: item.idCadaver,
-      name: `${item.nombre} ${item.apellido}`,
-      date: item.fechaIngreso,
-      state: item.estado,
-      document: item.documentoIdentidad,
-      description: item.observaciones || "Sin observaciones",
-    }));
-    setBodiesData(mappedData);
+  const fetchData = async () => {
+    try {
+      const data: CuerpoInhumado[] = await getAllBodies();
+      setAllBodies(data);
+
+      const mappedData: MappedBody[] = data.map((item) => ({
+        id: item.idCadaver,
+        name: `${item.nombre} ${item.apellido}`,
+        date: item.fechaIngreso,
+        state: item.estado,
+        document: item.documentoIdentidad,
+        description: item.observaciones || "Sin observaciones",
+      }));
+      setBodiesData(mappedData);
+    } catch (error) {
+      Swal.fire('Error', 'No se pudieron cargar los datos.', 'error');
+    }
   };
 
   useEffect(() => {
@@ -44,9 +50,9 @@ const BodiesRegister = () => {
   function normalizeText(text: string): string {
     return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   }
-  
+
   const filteredData = bodiesData.filter((item) => {
-    const searchTerm = normalizeText(search).toLowerCase();
+    const searchTerm = normalizeText(search);
     return (
       (filterType === "All" || item.state === filterType) &&
       (
@@ -56,11 +62,10 @@ const BodiesRegister = () => {
     );
   });
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
-
+  // Calcular datos paginados
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const handleDelete = async (id: string) => {
@@ -75,15 +80,14 @@ const BodiesRegister = () => {
         confirmButton: 'bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded mr-2',
         cancelButton: 'bg-gray-300 text-black hover:bg-gray-400 px-4 py-2 rounded'
       },
-      buttonsStyling: false 
+      buttonsStyling: false
     });
 
     if (result.isConfirmed) {
       try {
         await deleteBodyById(id);
         Swal.fire('Eliminado', 'El cuerpo ha sido eliminado exitosamente.', 'success');
-        fetchData();
-        setBodiesData((prev) => prev.filter((item) => item.id !== id));
+        fetchData(); // Solo confía en fetchData para actualizar el estado
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         Swal.fire('Error', `Ocurrió un error al eliminar: ${errorMessage}`, 'error');
@@ -98,7 +102,7 @@ const BodiesRegister = () => {
       icon: type === 'success' ? 'success' : 'error',
       confirmButtonText: 'Ok'
     });
-    if (type == 'success') {
+    if (type === 'success') {
       fetchData();
     }
   };
@@ -110,33 +114,10 @@ const BodiesRegister = () => {
       icon: type === 'success' ? 'success' : 'error',
       confirmButtonText: 'Ok'
     });
-    if (type == 'success') {
+    if (type === 'success') {
       fetchData();
     }
   };
-
-
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [newBodyData, setNewBodyData] = useState<Omit<CuerpoInhumado, "idCadaver">>({
-    nombre: "",
-    apellido: "",
-    documentoIdentidad: "",
-    numeroProtocoloNecropsia: "",
-    causaMuerte: "",
-    fechaNacimiento: null as unknown as Date,
-    fechaDefuncion: null as unknown as Date,
-    fechaIngreso: null as unknown as Date,
-    fechaInhumacion: null as unknown as Date,
-    fechaExhumacion: null as unknown as Date,
-    funcionarioReceptor: "",
-    cargoFuncionario: "",
-    autoridadRemitente: "",
-    cargoAutoridadRemitente: "",
-    autoridadExhumacion: "",
-    cargoAutoridadExhumacion: "",
-    estado: "",
-    observaciones: "",
-  });
 
   const handleViewDetails = (id: string) => {
     const fullBody = allBodies.find((body) => body.idCadaver === id);
@@ -184,25 +165,26 @@ const BodiesRegister = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      const data: CuerpoInhumado[] = await getAllBodies();
-      const mappedData: MappedBody[] = data.map((item) => ({
-        id: item.idCadaver,
-        name: `${item.nombre} ${item.apellido}`,
-        date: item.fechaIngreso,
-        state: item.estado,
-        document: item.documentoIdentidad,
-        description: item.observaciones || "Sin observaciones",
-      }));
-      setBodiesData(mappedData);
-
       Swal.fire('Éxito', 'La lista de cuerpos ha sido exportada exitosamente.', 'success');
-      setIsGenerating(false);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error('Error al exportar la lista de cuerpos:', error);
       Swal.fire('Error', `Ocurrió un error al exportar la lista: ${errorMessage}`, 'error');
+    } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Función para formatear fechas de manera legible
+  const formatDate = (date: Date | string | null): string => {
+    if (!date) return "No fecha";
+    const dateObj = date instanceof Date ? date : new Date(date);
+    if (isNaN(dateObj.getTime())) return "Fecha inválida";
+    return dateObj.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
   };
 
   return (
@@ -218,7 +200,10 @@ const BodiesRegister = () => {
             placeholder="Search records..."
             className="pl-10 pr-4 py-2 border rounded-lg"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1); // Resetear a la primera página al buscar
+            }}
           />
         </div>
 
@@ -230,20 +215,26 @@ const BodiesRegister = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => setFilterType("All")}>Todos</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilterType("INHUMADO")}>Inhumado</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilterType("EXHUMADO")}>Exhumado</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {
+              setFilterType("All");
+              setCurrentPage(1); // Resetear a la primera página al cambiar filtro
+            }}>Todos</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {
+              setFilterType("INHUMADO");
+              setCurrentPage(1);
+            }}>Inhumado</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {
+              setFilterType("EXHUMADO");
+              setCurrentPage(1);
+            }}>Exhumado</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex flex-col gap-1">
           <div className="flex items-center space-x-2">
             <CreateBodyDialog
-              onCreate={(message, type) => {
-                  handleCreate(message, type);
-                  fetchData();
-                }}
+              onCreate={handleCreate}
             />
-            <Button 
+            <Button
               className="flex items-center space-x-2 bg-blue-700 text-white px-4 py-2 hover:underline hover:bg-blue-500"
               onClick={handleExport}
             >
@@ -266,45 +257,43 @@ const BodiesRegister = () => {
               <TableHead>Estado</TableHead>
               <TableHead>Documento</TableHead>
               <TableHead>Descripción</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {allBodies.map((item) => (
-              <TableRow key={item.idCadaver}>
-                <TableCell>{item.nombre+" "+item.apellido}</TableCell>
-                <TableCell>{item.fechaIngreso instanceof Date ? item.fechaIngreso.toLocaleDateString() : item.fechaIngreso}</TableCell> 
+            {paginatedData.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>{item.name}</TableCell>
+                <TableCell>{formatDate(item.date)}</TableCell>
                 <TableCell>
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      item.estado === "Inhumado" ? "bg-gray-200 text-gray-700" : "bg-blue-600 text-white"
+                      item.state === "INHUMADO" ? "bg-gray-200 text-gray-700" : "bg-blue-600 text-white"
                     }`}
                   >
-                    {item.estado}
+                    {item.state}
                   </span>
                 </TableCell>
-                <TableCell>{item.documentoIdentidad}</TableCell>
-                <TableCell>{item.observaciones}</TableCell> 
+                <TableCell>{item.document}</TableCell>
+                <TableCell>{item.description}</TableCell>
                 <TableCell className="flex gap-1">
-                  <Button 
+                  <Button
                     className="bg-blue-600 hover:underline hover:bg-blue-400 transition"
-                    onClick={() => handleViewDetails(item.idCadaver)}
+                    onClick={() => handleViewDetails(item.id)}
                   >Ver</Button>
                   <EditBodyDialog
-                      body={item}
-                      onUpdate={(message, type) => {
-                        handleUpdate(message, type);
-                        fetchData();
-                      }}
+                    body={allBodies.find((body) => body.idCadaver === item.id)!}
+                    onUpdate={handleUpdate}
                   />
                   <Button
                     size='icon'
                     className="bg-red-600 text-white hover:underline hover:bg-red-400 transition"
-                    onClick={() => handleDelete(item.idCadaver)}>
-                      <FaTrash />
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    <FaTrash />
                   </Button>
-                  <Link to={`events/${item.idCadaver}`}>
-                    <Button size='icon' className="bg-green-600 text-white hover:underline hover:bg-green-400 transition" >
+                  <Link to={`events/${item.id}`}>
+                    <Button size='icon' className="bg-green-600 text-white hover:underline hover:bg-green-400 transition">
                       <FaList className="size-5" />
                     </Button>
                   </Link>
@@ -327,18 +316,14 @@ const BodiesRegister = () => {
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
           >
-            Previous
+            Anterior
           </Button>
           <Button
             className="text-white bg-blue-700 px-3 py-1 rounded-lg hover:underline hover:bg-blue-500"
-            onClick={() =>
-              setCurrentPage((prev) =>
-                prev < totalPages ? prev + 1 : prev
-              )
-            }
+            onClick={() => setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev))}
             disabled={currentPage === totalPages}
           >
-            Next
+            Siguiente
           </Button>
         </div>
       </div>
@@ -352,11 +337,11 @@ const BodiesRegister = () => {
               <p><strong>Documento:</strong> {selectedBody.documentoIdentidad}</p>
               <p><strong>Protocolo Necropsia:</strong> {selectedBody.numeroProtocoloNecropsia}</p>
               <p><strong>Causa de Muerte:</strong> {selectedBody.causaMuerte}</p>
-              <p><strong>Fecha de Nacimiento:</strong> {selectedBody.fechaNacimiento.toISOString()}</p>
-              <p><strong>Fecha de Defunción:</strong> {selectedBody.fechaDefuncion.toString()}</p>
-              <p><strong>Fecha de Ingreso:</strong> {selectedBody.fechaIngreso.toISOString()}</p>
-              <p><strong>Fecha de Inhumación:</strong> {selectedBody.fechaInhumacion.toISOString()}</p>
-              <p><strong>Fecha de Exhumación:</strong> {selectedBody.fechaExhumacion.toISOString()}</p>
+              <p><strong>Fecha de Nacimiento:</strong> {formatDate(selectedBody.fechaNacimiento)}</p>
+              <p><strong>Fecha de Defunción:</strong> {formatDate(selectedBody.fechaDefuncion)}</p>
+              <p><strong>Fecha de Ingreso:</strong> {formatDate(selectedBody.fechaIngreso)}</p>
+              <p><strong>Fecha de Inhumación:</strong> {formatDate(selectedBody.fechaInhumacion)}</p>
+              <p><strong>Fecha de Exhumación:</strong> {formatDate(selectedBody.fechaExhumacion)}</p>
               <p><strong>Funcionario Receptor:</strong> {selectedBody.funcionarioReceptor} ({selectedBody.cargoFuncionario})</p>
               <p><strong>Autoridad Remitente:</strong> {selectedBody.autoridadRemitente} ({selectedBody.cargoAutoridadRemitente})</p>
               <p><strong>Autoridad Exhumación:</strong> {selectedBody.autoridadExhumacion} ({selectedBody.cargoAutoridadExhumacion})</p>
@@ -374,89 +359,8 @@ const BodiesRegister = () => {
           </div>
         </div>
       )}
-      {showRegisterModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-4 text-center">Registrar Nuevo Cuerpo</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {Object.entries(newBodyData).map(([key, value]) => (
-                key !== "estado" ? (
-                  <div key={key} className="flex flex-col">
-                    <label className="text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
-                    <input
-                      type={key.includes("fechaIngreso") ? "datetime-local" :
-                            key.includes("fecha") ? "date" : "text"}
-                      value={
-                        key.includes("fechaIngreso")
-                          ? (value ? (value as string).slice(0, 16) : "")
-                          : key.includes("fecha")
-                            ? (value ? new Date(value).toISOString().split('T')[0] : "")
-                            : (value as string)
-                      }
-                      onChange={(e) => {
-                        const newValue = e.target.value;
-                        setNewBodyData((prev) => ({
-                          ...prev,
-                          [key]: newValue
-                        }));
-                      }}
-                      className="border p-2 rounded"
-                    />
-                  </div>
-                ) : null
-              ))}
-              <div className="flex flex-col">
-                <label className="text-gray-700">Estado</label>
-                <select
-                  value={newBodyData.estado}
-                  onChange={(e) => setNewBodyData((prev) => ({
-                    ...prev,
-                    estado: e.target.value
-                  }))}
-                  className="border p-2 rounded"
-                >
-                  <option value="">Seleccione estado</option>
-                  <option value="INHUMADO">Inhumado</option>
-                  <option value="EXHUMADO">Exhumado</option>
-                </select>
-              </div>
-            </div>
-      
-            <div className="flex justify-end gap-4 mt-6">
-              <Button
-                className="bg-gray-400 text-black px-4 py-2 rounded hover:bg-gray-500"
-                onClick={() => setShowRegisterModal(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-500"
-                onClick={async () => {
-                  try {
-                    const bodyToSend = {
-                      ...newBodyData,
-                      fechaIngreso: newBodyData.fechaIngreso
-                        ? newBodyData.fechaIngreso + ":00"
-                        : "",
-                    };
-                    //await createBody(bodyToSend);
-                    Swal.fire('Éxito', 'El cuerpo fue registrado exitosamente.', 'success');
-                    setShowRegisterModal(false);
-                    window.location.reload(); 
-                  } catch (error: unknown) {
-                    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-                    Swal.fire('Error', `Ocurrió un error al registrar el cuerpo: ${errorMessage}`, 'error');
-                  }
-                }}
-              >
-                Registrar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
-}
+};
 
 export default BodiesRegister;
