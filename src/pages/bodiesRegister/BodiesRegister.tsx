@@ -4,7 +4,7 @@ import { FaFileExport, FaSearch, FaFilter, FaList, FaTrash } from "react-icons/f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"; 
 import { Button } from "../../components/ui/button"; 
 import { Input } from "../../components/utilsComponents/Input"; 
-import { getAllBodies, deleteBodyById, createBody, updateBodyById } from "../../services/managementService"; 
+import { getAllBodies, deleteBodyById, createBody } from "../../services/managementService"; 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
 import { CuerpoInhumado, MappedBody } from "../../models/CuerpoInhumado"; 
 import Swal from 'sweetalert2';
@@ -82,6 +82,7 @@ const BodiesRegister = () => {
       try {
         await deleteBodyById(id);
         Swal.fire('Eliminado', 'El cuerpo ha sido eliminado exitosamente.', 'success');
+        fetchData();
         setBodiesData((prev) => prev.filter((item) => item.id !== id));
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -97,6 +98,9 @@ const BodiesRegister = () => {
       icon: type === 'success' ? 'success' : 'error',
       confirmButtonText: 'Ok'
     });
+    if (type == 'success') {
+      fetchData();
+    }
   };
 
   const handleCreate = async (message: string, type: string) => {
@@ -106,6 +110,9 @@ const BodiesRegister = () => {
       icon: type === 'success' ? 'success' : 'error',
       confirmButtonText: 'Ok'
     });
+    if (type == 'success') {
+      fetchData();
+    }
   };
 
 

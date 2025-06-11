@@ -1,10 +1,9 @@
 import { NichoCuerpoCreate } from '@/models/NichoCuerpo';
-import {apiManagement} from '../api/axios';
+import { apiManagement } from '../api/axios';
 import { CuerpoInhumado } from "../models/CuerpoInhumado";
 import { Nicho } from "../models/Nicho";
 import { EventoCuerpo } from '../models/EventoCuerpo';
 import { EventoCuerpoUpdate } from '@/models';
-
 
 export const getAllBodies = async () => {
     try {
@@ -14,8 +13,7 @@ export const getAllBodies = async () => {
       console.error("Error al obtener los cuerpos:", error);
       throw error;
     }
-  
-  };
+};
 
 export const deleteBodyById = async (idCadaver: string) => {
   try {
@@ -45,7 +43,7 @@ export const updateBody = async (idCadaver: string, updatedData: Partial<CuerpoI
     console.error(`Error al actualizar el cuerpo con id ${idCadaver}:`, error);
     throw error;
   }
-}
+};
 
 export const getAllNichos = async () => {
   try {
@@ -80,7 +78,7 @@ export const getNichoById = async (codigo: string) => {
 export const getCuerpoInhumadoByNicho = async (codigo: string) => {
   try {
     const response = await apiManagement.get(`/nichoscuerpos/nicho/${codigo}`);
-    return response.data; // Añade esta línea para devolver los datos
+    return response.data;
   } catch (error) {
     console.error("Error al obtener el cuerpo inhumado por nicho:", error);
     throw error;
@@ -90,9 +88,8 @@ export const getCuerpoInhumadoByNicho = async (codigo: string) => {
 export const createNichoCuerpo = async (payload: NichoCuerpoCreate) => {
   try {
     const response = await apiManagement.post("/nichoscuerpos", payload);
-    return response.data; // o simplemente return true;
+    return response.data;
   } catch (err: any) {
-    // Puedes inspeccionar err.response.status o err.response.data
     const message =
       err.response?.data?.message ||
       `Error al asignar nicho (status ${err.response?.status})`;
@@ -101,9 +98,7 @@ export const createNichoCuerpo = async (payload: NichoCuerpoCreate) => {
 };
 
 export const releaseNicho = async (codigoNicho: string) => {
-  // pide al backend el DTO de la relación activa
   const relacion = await apiManagement.get(`/nichoscuerpos/nichoByID/${codigoNicho}`);
-  // borra la relación
   await apiManagement.delete(`/nichoscuerpos/${relacion.data.id}`);
 };
 
@@ -134,7 +129,7 @@ export const getUnassignedBodies = async (): Promise<CuerpoInhumado[]> => {
 export const actualizarEstadoNicho = async (codigo: string, nuevoEstado: string) => {
   try {
     const response = await apiManagement.put(`/nichos/actualizar-estado/${codigo}`, {}, {
-      params:{
+      params: {
         estado: nuevoEstado
       }
     });
@@ -143,12 +138,12 @@ export const actualizarEstadoNicho = async (codigo: string, nuevoEstado: string)
     console.error("Error al actualizar el estado del nicho:", error);
     throw error;
   }
-}
+};
 
 export const getLastBodiesIngress = async (cantidad: number) => {
   try {
-    const response = await apiManagement.get('/cuerposinhumados/ultimos',{
-      params:{
+    const response = await apiManagement.get('/cuerposinhumados/ultimos', {
+      params: {
         cantidad: cantidad
       }
     });
@@ -157,8 +152,7 @@ export const getLastBodiesIngress = async (cantidad: number) => {
     console.error("Error al obtener el último ingreso:", error);
     throw error;
   }
-}
-
+};
 
 /**
  * Searches for bodies by name, ID, or document number
@@ -190,8 +184,6 @@ export const getNichoByIdCuerpo = async (idCuerpo: string): Promise<Nicho | null
     if (error.response && error.response.status === 404) {
       return null;
     }
-
-    // Otros errores sí deben registrarse
     console.error('Error inesperado al obtener el nicho:', error);
     throw error;
   }
@@ -241,13 +233,10 @@ export const createEventFile = async (formData: FormData): Promise<EventoCuerpo>
     return response.data;
   } catch (error: any) {
     if (error.response) {
-      // Backend returned an error response
       throw new Error(error.response.data || `HTTP error! Status: ${error.response.status}`);
     } else if (error.request) {
-      // No response received
       throw new Error("No response from server");
     } else {
-      // Other errors (e.g., configuration issue)
       throw new Error(error.message);
     }
   }
@@ -303,38 +292,51 @@ export const getBodyById = async (idCadaver: string): Promise<CuerpoInhumado> =>
       `Error al obtener el cuerpo por ID (status ${error.response?.status})`;
     throw new Error(message);
   }
-}
+};
+
+/**
+ * Uploads a document to the /cuerposinhumados/from-form endpoint
+ * @param file The file to upload
+ * @returns The created CuerpoInhumado object
+ */
+export const uploadDocument = async (file: File): Promise<CuerpoInhumado> => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await apiManagement.post<CuerpoInhumado>("/cuerposinhumados/from-form", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      `Error al subir el documento (status ${error.response?.status})`;
+    throw new Error(message);
+  }
+};
 
 // Función para descargar archivo de Cloudinary
 export const downloadCloudinaryFile = async (url: string, fileName: string): Promise<void> => {
   try {
-    // Obtener el archivo como blob
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Error al descargar: ${response.status}`);
     }
-    
-    // Convertir la respuesta a blob
     const blob = await response.blob();
-    
-    // Crear una URL para el blob
     const downloadUrl = window.URL.createObjectURL(blob);
-    
-    // Crear un elemento a temporal
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.download = fileName || 'archivo_descargado';
-    
-    // Añadir, hacer clic y eliminar el enlace
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    // Liberar la URL
     window.URL.revokeObjectURL(downloadUrl);
   } catch (error) {
     console.error("Error al descargar el archivo:", error);
     throw new Error("No se pudo descargar el archivo");
   }
 };
-  
