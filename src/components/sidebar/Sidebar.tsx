@@ -12,8 +12,8 @@ function Sidebar() {
   return (
     <aside className="w-1/6 bg-gray-800 text-white shadow h-full flex flex-col">
       <div className="p-4 border-b border-gray-700 flex">
-        <img src= "src\assets\logo.png" alt="Logo" className="h-14 w-auto pr-3" />
-        <h1 className="text-xl font-bold">Gestión de Cementerio</h1>
+        <img src= "src\assets\logo.png" alt="Logo" className="h-auto w-auto " />
+       
       </div>
       <nav className="flex-1 p-4 space-y-2">
         <Link to="/" className="flex items-center space-x-3 text-gray-300 hover:text-blue-500 p-2 rounded-lg transition duration-300">
