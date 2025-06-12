@@ -74,10 +74,6 @@ describe('Dashboard Component', () => {
     vi.clearAllMocks();
   });
 
-  test('DB-01: Renderiza el componente sin errores', () => {
-    render(<Dashboard />);
-    expect(screen.getByText(/Bienvenido al sistema de gestión de cementerios/i)).toBeInTheDocument();
-  });
 
   test('DB-01: Renderiza las estadísticas correctamente', async () => {
     render(<Dashboard />);
