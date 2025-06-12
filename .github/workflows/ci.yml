@@ -14,13 +14,13 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v3
 
-      - name: Configurar Node.js
+      - name: Instalar Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: '18'
 
       - name: Instalar dependencias
         run: npm install
 
-      - name: Ejecutar pruebas
-        run: npm test -- --watchAll=false
+      - name: Ejecutar pruebas con Vitest
+        run: npm test
