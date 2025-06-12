@@ -81,8 +81,8 @@ vi.mock('@/components/ui/select', () => ({
 describe('CemeteryMap Component', () => {
   // Datos de prueba
   const mockNichos: Nicho[] = [
-    { codigo: 'N1', ubicacion: 'Sector A', estado: 'OCUPADO' },
-    { codigo: 'N2', ubicacion: 'Sector B', estado: 'DISPONIBLE' },
+    { codigo: 'NIC-001', ubicacion: 'Sección A - Fila 1 - Nicho 1', estado: 'OCUPADO' },
+    { codigo: 'NIC-003', ubicacion: 'Sección B - Fila 3 - Nicho 5', estado: 'DISPONIBLE' },
   ];
 
   beforeEach(() => {
